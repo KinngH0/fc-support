@@ -18,6 +18,10 @@ app.config['JSON_AS_ASCII'] = False  # 한글 인코딩을 위한 설정
 def home():
     return render_template('index.html')
 
+@app.route("/search/pick-rate")
+def pick_rate_search():
+    return render_template('search/pick_rate.html')
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static', 'images'),
