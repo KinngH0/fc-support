@@ -6,12 +6,16 @@
     <title>FC Support - 넥슨 FC Online API 지원</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 <body class="bg-gray-100">
     <nav class="bg-blue-600 text-white shadow-lg">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
-                <div class="text-xl font-bold">FC Support</div>
+                <div class="flex items-center">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-8 w-auto mr-3">
+                    <div class="text-xl font-bold">FC Support</div>
+                </div>
                 <div class="hidden md:flex space-x-4">
                     <a href="#" class="hover:text-blue-200">홈</a>
                     <a href="#" class="hover:text-blue-200">선수 검색</a>
