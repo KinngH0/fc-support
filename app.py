@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 import logging
 import sys
 import os
@@ -16,10 +16,7 @@ app.config['JSON_AS_ASCII'] = False  # 한글 인코딩을 위한 설정
 
 @app.route("/")
 def home():
-    return jsonify({
-        "status": "success",
-        "message": "FC Support API 서버가 실행 중입니다"
-    })
+    return render_template('index.html')
 
 @app.route("/healthz")
 def health_check():

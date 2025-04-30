@@ -1,0 +1,27 @@
+/* Custom styles */
+.container {
+    max-width: 1200px;
+}
+
+/* Responsive navigation */
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+}
+
+/* Custom animations */
+.hover\:scale-105:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Custom shadows */
+.custom-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Custom transitions */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+} 
