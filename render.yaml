@@ -2,13 +2,6 @@ services:
   - type: web
     name: fc-support
     env: python
-    region: singapore
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    healthCheckPath: /healthz
-    autoDeploy: true
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.18
-      - key: PYTHONUNBUFFERED
-        value: "true" 
+    plan: standard
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
