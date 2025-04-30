@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,38 +16,49 @@
     <!-- 스타일시트 -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.js"></script>
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-blue-600 text-white shadow-lg">
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+    <nav class="bg-blue-600 dark:bg-blue-800 text-white shadow-lg">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
                     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-8 w-auto mr-3">
                     <div class="text-xl font-bold">FC Support</div>
                 </div>
-                <div class="hidden md:flex space-x-4">
-                    <a href="#" class="hover:text-blue-200">홈</a>
-                    <a href="#" class="hover:text-blue-200">선수 검색</a>
-                    <a href="#" class="hover:text-blue-200">매치 기록</a>
-                    <a href="#" class="hover:text-blue-200">통계</a>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden dark:inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                    <div class="hidden md:flex space-x-4">
+                        <a href="#" class="hover:text-blue-200">홈</a>
+                        <a href="#" class="hover:text-blue-200">선수 검색</a>
+                        <a href="#" class="hover:text-blue-200">매치 기록</a>
+                        <a href="#" class="hover:text-blue-200">통계</a>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto px-6 py-8">
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-4">FC Online API 지원 서비스</h1>
-            <p class="text-gray-600 mb-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">FC Online API 지원 서비스</h1>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
                 FC Online API를 활용한 다양한 기능을 제공합니다. 선수 검색, 매치 기록 조회, 통계 분석 등을 쉽게 이용해보세요.
             </p>
             <div class="mt-6">
                 <form class="flex space-x-4">
                     <input type="text" 
                            placeholder="닉네임을 입력하세요" 
-                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                           class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     <button type="submit" 
-                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            class="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors">
                         검색
                     </button>
                 </form>
@@ -55,27 +66,27 @@
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">선수 검색</h2>
-                <p class="text-gray-600">선수의 상세 정보와 시즌별 기록을 확인해보세요.</p>
-                <a href="#" class="mt-4 inline-block text-blue-600 hover:text-blue-800">자세히 보기 →</a>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">선수 검색</h2>
+                <p class="text-gray-600 dark:text-gray-300">선수의 상세 정보와 시즌별 기록을 확인해보세요.</p>
+                <a href="#" class="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">자세히 보기 →</a>
             </div>
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">매치 기록</h2>
-                <p class="text-gray-600">최근 매치 기록과 상세 전적을 분석해보세요.</p>
-                <a href="#" class="mt-4 inline-block text-blue-600 hover:text-blue-800">자세히 보기 →</a>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">매치 기록</h2>
+                <p class="text-gray-600 dark:text-gray-300">최근 매치 기록과 상세 전적을 분석해보세요.</p>
+                <a href="#" class="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">자세히 보기 →</a>
             </div>
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">통계 분석</h2>
-                <p class="text-gray-600">다양한 통계 데이터를 시각화하여 제공합니다.</p>
-                <a href="#" class="mt-4 inline-block text-blue-600 hover:text-blue-800">자세히 보기 →</a>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">통계 분석</h2>
+                <p class="text-gray-600 dark:text-gray-300">다양한 통계 데이터를 시각화하여 제공합니다.</p>
+                <a href="#" class="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">자세히 보기 →</a>
             </div>
         </div>
     </main>
 
-    <footer class="bg-gray-800 text-white mt-12">
+    <footer class="bg-gray-800 dark:bg-gray-900 text-white mt-12">
         <div class="container mx-auto px-6 py-4">
-            <p class="text-center text-gray-400">© 2024 FC Support. All rights reserved.</p>
+            <p class="text-center text-gray-400 dark:text-gray-500">© 2024 FC Support. All rights reserved.</p>
         </div>
     </footer>
 

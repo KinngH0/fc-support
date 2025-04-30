@@ -1,4 +1,30 @@
+// 다크모드 관리
+function initTheme() {
+    // 시스템 다크모드 설정 확인
+    const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // localStorage에서 테마 설정 가져오기
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme === 'dark' || (!savedTheme && systemDarkMode)) {
+        document.documentElement.classList.add('dark');
+    }
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 다크모드 초기화
+    initTheme();
+    
+    // 다크모드 토글 버튼 이벤트 리스너
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+
     // 검색 폼 제출 처리
     const searchForm = document.querySelector('form');
     if (searchForm) {
