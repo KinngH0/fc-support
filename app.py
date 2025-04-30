@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_from_directory
 import logging
 import sys
 import os
@@ -17,6 +17,11 @@ app.config['JSON_AS_ASCII'] = False  # 한글 인코딩을 위한 설정
 @app.route("/")
 def home():
     return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static', 'images'),
+                             'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route("/healthz")
 def health_check():
