@@ -16,18 +16,16 @@
             </div>
 
             <div class="space-y-2">
-                <label for="teamColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">팀 컬러</label>
-                <div class="relative">
-                    <input type="text" 
-                           id="teamColorSearch" 
-                           placeholder="팀 컬러 검색"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-[rgb(78,182,85)] dark:focus:border-[rgb(78,182,85)] dark:bg-[#2D3B4F] dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
-                    <select id="teamColor" 
-                            name="teamColor"
-                            class="mt-2 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-[rgb(78,182,85)] dark:focus:border-[rgb(78,182,85)] dark:bg-[#2D3B4F] dark:text-white">
-                        <option value="">전체</option>
-                    </select>
-                </div>
+                <label for="teamColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">팀 컬러 필터</label>
+                <input type="text" 
+                       id="teamColor" 
+                       name="teamColor"
+                       list="teamColorList"
+                       placeholder="조회할 팀 컬러 지정"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-[rgb(78,182,85)] dark:focus:border-[rgb(78,182,85)] dark:bg-[#2D3B4F] dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                <datalist id="teamColorList">
+                    <option value="">전체</option>
+                </datalist>
             </div>
 
             <div class="space-y-2">
@@ -44,7 +42,7 @@
             <div class="flex justify-end">
                 <button type="submit" 
                         class="px-6 py-2 bg-white hover:bg-gray-100 dark:bg-[#2D3B4F] dark:hover:bg-[#374357] text-[rgb(78,182,85)] border border-[rgb(78,182,85)] rounded-lg transition-colors">
-                    검색
+                    조회하기
                 </button>
             </div>
         </form>
