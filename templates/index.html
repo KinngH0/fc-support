@@ -33,18 +33,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.js"></script>
 </head>
-<body class="bg-white dark:bg-[#1E1E1E] transition-colors duration-200">
+<body class="bg-white dark:bg-[#0F172A] transition-colors duration-200">
     <div class="max-w-[1200px] mx-auto">
-        <nav class="bg-white dark:bg-[#111827] shadow-lg relative">
-            <div class="px-6 py-4">
-                <div class="flex items-center">
-                    <div class="flex items-center flex-1">
+        <nav class="bg-white dark:bg-[#1E293B] shadow-lg relative w-full">
+            <div class="px-6 py-2">
+                <div class="flex items-center justify-center">
+                    <div class="flex items-center">
                         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="w-auto" style="height: 3rem;">
-                        <div class="text-2xl font-bold ml-2" style="color: rgb(78, 182, 85)">FC SUPPORT</div>
+                        <div class="text-[3rem] font-bold ml-2 text-[rgb(78,182,85)] dark:text-[rgb(78,182,85)]">FC SUPPORT</div>
                     </div>
                 </div>
             </div>
-            <button id="theme-toggle" class="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white hover:bg-gray-100 dark:bg-[#111827] dark:hover:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 mr-6">
+            <button id="theme-toggle" class="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white hover:bg-gray-100 dark:bg-[#1E293B] dark:hover:bg-[#2D3B4F] flex items-center justify-center border border-gray-200 dark:border-gray-700 mr-6">
                 <!-- 라이트 모드 아이콘 (달) -->
                 <svg class="w-5 h-5 dark:hidden text-gray-800" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
@@ -56,9 +56,9 @@
             </button>
         </nav>
 
-        <main class="container mx-auto px-6 py-8">
-            <div class="bg-white dark:bg-[#111827] rounded-lg shadow-lg p-6 mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">FC ONLINE API 지원 서비스</h1>
+        <main class="container mx-auto px-12 py-16">
+            <div class="bg-white dark:bg-[#1E293B] rounded-lg shadow-lg p-6 mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">FC ONLINE API 지원 서비스</h1>
                 <p class="text-gray-600 dark:text-gray-300 mb-4">
                     FC Online API를 활용한 다양한 기능을 제공합니다. 선수 검색, 매치 기록 조회, 통계 분석 등을 쉽게 이용해보세요.
                 </p>
@@ -66,9 +66,9 @@
                     <form class="flex space-x-4">
                         <input type="text" 
                                placeholder="닉네임을 입력하세요" 
-                               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-[rgb(78,182,85)] dark:focus:border-[rgb(78,182,85)] dark:bg-gray-800 dark:text-white">
+                               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-[rgb(78,182,85)] dark:focus:border-[rgb(78,182,85)] dark:bg-[#2D3B4F] dark:text-white">
                         <button type="submit" 
-                                class="px-6 py-2 bg-white hover:bg-gray-100 dark:bg-[#111827] dark:hover:bg-gray-800 text-[rgb(78,182,85)] border border-[rgb(78,182,85)] rounded-lg transition-colors">
+                                class="px-6 py-2 bg-white hover:bg-gray-100 dark:bg-[#2D3B4F] dark:hover:bg-[#374357] text-[rgb(78,182,85)] border border-[rgb(78,182,85)] rounded-lg transition-colors">
                             검색
                         </button>
                     </form>
@@ -76,25 +76,25 @@
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-[#111827] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
-                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">선수 검색</h2>
+                <div class="bg-white dark:bg-[#1E293B] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">선수 검색</h2>
                     <p class="text-gray-600 dark:text-gray-300">선수의 상세 정보와 시즌별 기록을 확인해보세요.</p>
                     <a href="#" class="mt-4 inline-block text-[rgb(78,182,85)] hover:text-[rgb(60,150,70)] dark:text-[rgb(78,182,85)] dark:hover:text-[rgb(60,150,70)]">자세히 보기 →</a>
                 </div>
-                <div class="bg-white dark:bg-[#111827] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
-                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">매치 기록</h2>
+                <div class="bg-white dark:bg-[#1E293B] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">매치 기록</h2>
                     <p class="text-gray-600 dark:text-gray-300">최근 매치 기록과 상세 전적을 분석해보세요.</p>
                     <a href="#" class="mt-4 inline-block text-[rgb(78,182,85)] hover:text-[rgb(60,150,70)] dark:text-[rgb(78,182,85)] dark:hover:text-[rgb(60,150,70)]">자세히 보기 →</a>
                 </div>
-                <div class="bg-white dark:bg-[#111827] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
-                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">통계 분석</h2>
+                <div class="bg-white dark:bg-[#1E293B] rounded-lg shadow-lg p-6 transition-transform hover:scale-105">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">통계 분석</h2>
                     <p class="text-gray-600 dark:text-gray-300">다양한 통계 데이터를 시각화하여 제공합니다.</p>
                     <a href="#" class="mt-4 inline-block text-[rgb(78,182,85)] hover:text-[rgb(60,150,70)] dark:text-[rgb(78,182,85)] dark:hover:text-[rgb(60,150,70)]">자세히 보기 →</a>
                 </div>
             </div>
         </main>
 
-        <footer class="bg-white dark:bg-[#111827] text-gray-600 dark:text-gray-400 mt-12 shadow-lg">
+        <footer class="bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 mt-12 shadow-lg">
             <div class="container mx-auto px-6 py-4">
                 <p class="text-center">© 2024 FC Support. All rights reserved.</p>
             </div>
