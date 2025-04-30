@@ -13,10 +13,10 @@ def home():
     logger.info("Home endpoint accessed")
     return "Hello, Render!"
 
-@app.route("/health")
+@app.route("/healthz")
 def health():
     logger.info("Health check endpoint accessed")
-    return jsonify({"status": "healthy"})
+    return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))

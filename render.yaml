@@ -12,5 +12,5 @@ services:
         sync: false
       - key: PYTHONUNBUFFERED
         value: "true"
-    healthCheckPath: /health
+    healthCheckPath: /healthz
     autoDeploy: true 
