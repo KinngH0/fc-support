@@ -1,8 +1,7 @@
 from flask import Flask, jsonify
-from dotenv import load_dotenv
-import os
 import logging
 import sys
+import os
 
 # 로깅 설정
 logging.basicConfig(
@@ -13,7 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.json.ensure_ascii = False  # 한글이 유니코드로 변환되지 않도록 설정
+app.config['JSON_AS_ASCII'] = False  # 한글 인코딩을 위한 설정
 
 @app.route("/")
 def home():
