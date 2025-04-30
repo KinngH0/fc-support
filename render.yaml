@@ -2,6 +2,7 @@ services:
   - type: web
     name: fc-support
     env: python
+    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
     envVars:
@@ -9,5 +10,5 @@ services:
         value: 3.9.0
       - key: NX_API_KEY
         sync: false
-    healthCheckPath: /
+    healthCheckPath: /health
     autoDeploy: true 
