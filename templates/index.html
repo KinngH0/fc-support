@@ -34,34 +34,26 @@
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.js"></script>
 </head>
 <body class="bg-[#1E1E1E] dark:bg-[#1E1E1E] transition-colors duration-200">
-    <div class="max-w-[1320px] mx-auto">
-        <nav class="bg-white dark:bg-[#111827] shadow-lg">
+    <div class="max-w-[1600px] mx-auto">
+        <nav class="bg-white dark:bg-[#111827] shadow-lg relative">
             <div class="container mx-auto px-6 py-4">
                 <div class="flex items-center">
                     <div class="flex items-center flex-1">
-                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-12 w-auto mr-4">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-[4.5rem] w-auto mr-2">
                         <div class="text-2xl font-bold" style="color: rgb(78, 182, 85)">FC SUPPORT</div>
-                    </div>
-                    <div class="flex items-center space-x-8">
-                        <div class="flex space-x-6">
-                            <a href="#" class="text-gray-800 dark:text-gray-200 hover:text-[rgb(78,182,85)] dark:hover:text-[rgb(78,182,85)]">홈</a>
-                            <a href="#" class="text-gray-800 dark:text-gray-200 hover:text-[rgb(78,182,85)] dark:hover:text-[rgb(78,182,85)]">선수 검색</a>
-                            <a href="#" class="text-gray-800 dark:text-gray-200 hover:text-[rgb(78,182,85)] dark:hover:text-[rgb(78,182,85)]">매치 기록</a>
-                            <a href="#" class="text-gray-800 dark:text-gray-200 hover:text-[rgb(78,182,85)] dark:hover:text-[rgb(78,182,85)]">통계</a>
-                        </div>
-                        <button id="theme-toggle" class="p-2 rounded-lg bg-white hover:bg-gray-100 dark:bg-[#111827] dark:hover:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                            <!-- 라이트 모드 아이콘 -->
-                            <svg class="w-5 h-5 dark:hidden text-gray-800" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
-                            </svg>
-                            <!-- 다크 모드 아이콘 -->
-                            <svg class="w-5 h-5 hidden dark:block text-gray-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>
+            <button id="theme-toggle" class="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white hover:bg-gray-100 dark:bg-[#111827] dark:hover:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 mr-6">
+                <!-- 라이트 모드 아이콘 (달) -->
+                <svg class="w-5 h-5 dark:hidden text-gray-800" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                </svg>
+                <!-- 다크 모드 아이콘 (해) -->
+                <svg class="w-5 h-5 hidden dark:block text-gray-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+                </svg>
+            </button>
         </nav>
 
         <main class="container mx-auto px-6 py-8">
