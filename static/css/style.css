@@ -16,7 +16,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Hakgyoansim Chilpanjiugae', 'Noto Sans KR', sans-serif;
-    font-size: 0.75rem;
+    font-size: 1.5rem;
 }
 
 body {
@@ -70,7 +70,7 @@ nav.dark {
 }
 
 .logo span {
-    font-size: 1rem;
+    font-size: 2rem;
     font-weight: bold;
     color: var(--primary-color);
 }
@@ -100,7 +100,7 @@ nav.dark {
 .card h2 {
     color: var(--primary-color);
     margin-bottom: 1rem;
-    font-size: 0.75rem;
+    font-size: 1.5rem;
 }
 
 /* Forms */
@@ -112,7 +112,7 @@ input[type="number"] {
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-size: 0.5rem;
+    font-size: 1rem;
 }
 
 input[type="text"]:focus,
