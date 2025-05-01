@@ -70,9 +70,19 @@ nav.dark {
 }
 
 .logo span {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: var(--primary-color);
+}
+
+.text-gray-600 {
+    color: #4B5563;
+    font-size: 1.1rem;
+}
+
+.dark .text-gray-600 {
+    color: #D1D5DB;
+    font-size: 1.1rem;
 }
 
 /* Cards */
