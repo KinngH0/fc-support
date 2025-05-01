@@ -7,33 +7,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen">
-    <nav class="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700">
-        <div class="container mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <a href="{{ url_for('home') }}" class="flex items-center space-x-3">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-10">
-                    <span class="text-green-400 font-bold text-2xl">FC SUPPORT</span>
-                </a>
-                <button id="themeToggle" class="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
-                    <svg class="w-6 h-6 text-yellow-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
-                    </svg>
-                </button>
-            </div>
+<body class="bg-gradient">
+    <nav>
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo">
+                <span>FC SUPPORT</span>
+            </a>
+            <button id="themeToggle" aria-label="테마 변경">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+                </svg>
+            </button>
         </div>
     </nav>
 
-    {% block content %}{% endblock %}
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
 
-    <footer class="mt-auto py-6 bg-gray-800/50 backdrop-blur-lg border-t border-gray-700">
-        <div class="container mx-auto px-6 text-center text-gray-400">
-            <p>&copy; 2024 FC Support. All rights reserved.</p>
-        </div>
+    <footer>
+        <p>&copy; 2024 FC Support. All rights reserved.</p>
     </footer>
 
     <script>
-        // 다크모드 토글
         const themeToggle = document.getElementById('themeToggle');
         const body = document.body;
 
@@ -42,7 +39,6 @@
             localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light');
         });
 
-        // 저장된 테마 적용
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             body.classList.add('dark');
         }
