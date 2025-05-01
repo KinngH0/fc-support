@@ -16,7 +16,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Hakgyoansim Chilpanjiugae', 'Noto Sans KR', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1rem;
 }
 
 body {
@@ -70,19 +70,19 @@ nav.dark {
 }
 
 .logo span {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: var(--primary-color);
 }
 
 .text-gray-600 {
     color: #4B5563;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 .dark .text-gray-300 {
     color: #D1D5DB;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
 }
 
 /* Cards */
@@ -110,7 +110,7 @@ nav.dark {
 .card h2 {
     color: var(--primary-color);
     margin-bottom: 1rem;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
 }
 
 /* Forms */
@@ -122,7 +122,7 @@ input[type="number"] {
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 input[type="text"]:focus,
