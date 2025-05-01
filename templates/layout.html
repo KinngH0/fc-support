@@ -1,80 +1,53 @@
 <!DOCTYPE html>
-<html lang="ko" class="light">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FC Support - 넥슨 FC Online API 지원</title>
-    
-    <!-- 파비콘 설정 -->
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
-    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    
-    <!-- 스타일시트 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {}
-            }
-        }
-    </script>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        @font-face {
-            font-family: 'Hakgyoansim';
-            src: url("{{ url_for('static', filename='fonts/Hakgyoansim Chilpanjiugae TTF L.ttf') }}") format('truetype');
-            font-weight: normal;
-            font-style: normal;
-        }
-        * {
-            font-family: 'Hakgyoansim', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-    </style>
+    <title>FC SUPPORT - 넥슨 FC Online 통계</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.min.js"></script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 </head>
-<body class="bg-white dark:bg-[#0F172A] transition-colors duration-200 min-h-screen flex flex-col">
-    <nav class="bg-white dark:bg-[#1E293B] shadow-lg fixed top-0 left-0 right-0 z-50">
-        <div class="py-2">
-            <div class="flex items-center justify-center">
-                <div class="flex items-center">
-                    <a href="{{ url_for('home') }}" class="flex items-center">
-                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="w-auto" style="height: 3rem;">
-                        <div class="text-[2rem] font-bold ml-2 text-[rgb(78,182,85)] dark:text-[rgb(78,182,85)]">FC SUPPORT</div>
-                    </a>
-                </div>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen">
+    <nav class="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-3">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo" class="h-10">
+                    <span class="text-green-400 font-bold text-2xl">FC SUPPORT</span>
+                </a>
+                <button id="themeToggle" class="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
+                    <svg class="w-6 h-6 text-yellow-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+                    </svg>
+                </button>
             </div>
         </div>
-        <button id="theme-toggle" class="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white hover:bg-gray-100 dark:bg-[#1E293B] dark:hover:bg-[#2D3B4F] flex items-center justify-center border border-gray-200 dark:border-gray-700 mr-6">
-            <!-- 라이트 모드 아이콘 (달) -->
-            <svg class="w-5 h-5 dark:hidden text-gray-800" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-            </svg>
-            <!-- 다크 모드 아이콘 (해) -->
-            <svg class="w-5 h-5 hidden dark:block text-gray-200" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
-            </svg>
-        </button>
     </nav>
 
-    <div class="max-w-[1200px] mx-auto mt-[5rem] flex-grow">
-        {% block content %}{% endblock %}
-    </div>
+    {% block content %}{% endblock %}
 
-    <footer class="bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 shadow-lg mt-auto">
-        <div class="container mx-auto px-6 py-4">
-            <p class="text-center">© 2024 FC Support. All rights reserved.</p>
+    <footer class="mt-auto py-6 bg-gray-800/50 backdrop-blur-lg border-t border-gray-700">
+        <div class="container mx-auto px-6 text-center text-gray-400">
+            <p>&copy; 2024 FC Support. All rights reserved.</p>
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    <script>
+        // 다크모드 토글
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // 저장된 테마 적용
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            body.classList.add('dark');
+        }
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html> 
