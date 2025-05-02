@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC SUPPORT - 넥슨 FC Online 통계</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta name="description" content="FC Online 플레이어 통계 및 분석 서비스">
+    <meta name="theme-color" content="#00C853">
+</head>
+<body class="bg-gradient">
+    <nav class="glass">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="logo hover-lift">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="FC Support Logo">
+                <span>FC SUPPORT</span>
+            </a>
+            <button id="themeToggle" class="glass" aria-label="테마 변경">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <main class="container animate-fadeIn">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="glass">
+        <p>&copy; 2024 FC Support. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            body.classList.add('dark');
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
