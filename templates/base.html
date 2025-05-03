@@ -191,7 +191,6 @@
         .table {
             margin-bottom: 0;
             border: 1px solid #dee2e6;
-            background-color: #ffffff;
         }
 
         .table th {
@@ -215,24 +214,25 @@
 
         /* 다크모드 테이블 스타일 */
         [data-theme="dark"] .table {
-            background-color: #2d2d2d;
+            background-color: #1a1a1a;
             border-color: #4d4d4d;
             color: #e0e0e0;
         }
 
         [data-theme="dark"] .table th {
-            background-color: #3d3d3d;
+            background-color: #2d2d2d;
             border-color: #4d4d4d;
             color: #ffffff;
         }
 
         [data-theme="dark"] .table td {
+            background-color: #1a1a1a;
             border-color: #4d4d4d;
             color: #e0e0e0;
         }
 
         [data-theme="dark"] .table-hover tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: #2d2d2d;
         }
 
         /* 테이블 반응형 스타일 */
@@ -244,6 +244,21 @@
 
         [data-theme="dark"] .table-responsive {
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 정렬 아이콘 스타일 */
+        [data-theme="dark"] .sortable {
+            cursor: pointer;
+        }
+
+        [data-theme="dark"] .sortable i {
+            margin-left: 5px;
+            color: #999;
+        }
+
+        [data-theme="dark"] .sortable[data-order="asc"] i,
+        [data-theme="dark"] .sortable[data-order="desc"] i {
+            color: #4eb655;
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
