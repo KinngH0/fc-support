@@ -12,7 +12,9 @@ def serve_static(path):
 
 @app.route('/<path:path>')
 def serve_root(path):
-    return send_from_directory('static', path)
+    if path.startswith('static/'):
+        return send_from_directory('static', path)
+    return send_from_directory('static', 'index.html')
 
 @app.route('/healthz')
 def health_check():
