@@ -12,6 +12,8 @@ def serve_static(path):
 
 @app.route('/<path:path>')
 def serve_root(path):
+    if path == 'favicon.ico':
+        return send_from_directory('static/images', 'favicon.png')
     if path.startswith('static/'):
         return send_from_directory('static', path)
     return send_from_directory('static', 'index.html')
