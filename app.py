@@ -286,6 +286,9 @@ def search():
 
     try:
         data = request.json
+        if not data:
+            return jsonify({"error": "요청 데이터가 없습니다."}), 400
+
         rank_limit = int(data.get('rankRange', 1000))
         team_color = data.get('teamColor', 'all')
         top_n = int(data.get('topN', 5))
@@ -317,7 +320,8 @@ def search():
                     result = future.result()
                     if result:
                         player_records.extend(result)
-                except:
+                except Exception as e:
+                    print(f"Error fetching user data: {e}")
                     continue
 
         df = pd.DataFrame(player_records)
@@ -433,11 +437,12 @@ def search():
             "topRank": top_rank,
             "formations": formations,
             "valueInfo": value_info,
-            "scoreInfo": score_info,  # 점수 정보 추가
+            "scoreInfo": score_info,
             "positions": positions
         })
 
     except Exception as e:
+        print(f"Error in search API: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/excel', methods=['POST'])
