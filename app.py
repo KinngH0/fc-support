@@ -236,46 +236,69 @@ def fetch_user_data(nickname):
         return cached_data
 
     try:
+        session = get_session()
         ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
         if ouid_res.status_code != 200:
+            print(f"Failed to get OUID for {nickname}: {ouid_res.status_code}")
             return []
         ouid = ouid_res.json().get("ouid")
-
-        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", timeout=5)
-        if match_res.status_code != 200 or not match_res.json():
+        if not ouid:
+            print(f"No OUID found for {nickname}")
             return []
-        match_id = match_res.json()[0]
 
-        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
-        if detail_res.status_code != 200:
+        # 최근 매치 기록 여러 개 조회
+        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=10", timeout=5)
+        if match_res.status_code != 200:
+            print(f"Failed to get matches for {nickname}: {match_res.status_code}")
             return []
-        match_data = detail_res.json()
+        
+        matches = match_res.json()
+        if not matches:
+            print(f"No matches found for {nickname}")
+            return []
 
+        # 여러 매치에서 선수 데이터 수집
         results = []
-        for info in match_data["matchInfo"]:
-            if info["ouid"] == ouid:
-                for p in info.get("player", []):
-                    if p.get("spPosition") == 28:  # 감독
-                        continue
-                    sp_id = p["spId"]
-                    grade = p["spGrade"]
-                    position = position_map.get(p["spPosition"], f"pos{p['spPosition']}")
-                    season_id = int(str(sp_id)[:3])
-                    name = spid_map.get(sp_id, f"(Unknown:{sp_id})")
-                    season_name = season_map.get(season_id, f"{season_id}")
-                    results.append({
-                        "nickname": nickname,
-                        "position": position,
-                        "name": name,
-                        "season": season_name,
-                        "grade": grade,
-                    })
+        for match_id in matches[:3]:  # 최근 3경기만 확인
+            try:
+                detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+                if detail_res.status_code != 200:
+                    print(f"Failed to get match detail for {match_id}: {detail_res.status_code}")
+                    continue
+                    
+                match_data = detail_res.json()
+                for info in match_data.get("matchInfo", []):
+                    if info["ouid"] == ouid:
+                        for p in info.get("player", []):
+                            if p.get("spPosition") == 28:  # 감독
+                                continue
+                            sp_id = p["spId"]
+                            grade = p["spGrade"]
+                            position = position_map.get(p["spPosition"], f"pos{p['spPosition']}")
+                            season_id = int(str(sp_id)[:3])
+                            name = spid_map.get(sp_id, f"(Unknown:{sp_id})")
+                            season_name = season_map.get(season_id, f"{season_id}")
+                            results.append({
+                                "nickname": nickname,
+                                "position": position,
+                                "name": name,
+                                "season": season_name,
+                                "grade": grade,
+                            })
+            except Exception as e:
+                print(f"Error processing match {match_id} for {nickname}: {e}")
+                continue
 
         # 결과 캐시 저장
         if results:
             match_cache[nickname] = results
+            print(f"Cached {len(results)} players for {nickname}")
+        else:
+            print(f"No player data found for {nickname}")
         return results
-    except:
+
+    except Exception as e:
+        print(f"Error in fetch_user_data for {nickname}: {e}")
         return []
 
 @app.route('/')
