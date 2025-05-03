@@ -139,20 +139,15 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
     session = get_session()
     all_results = []
     
-    # 병렬 처리를 위한 함수
-    def fetch_page(page):
-        try:
-            # 캐시 키에 팀컬러 필터 포함
-            cache_key = f"{page}_{normalized_filter}"
-            cached_data = get_cached_rank_data(page, normalized_filter)
-            if cached_data:
-                return cached_data
+    for page in range(start_page, end_page + 1):
+        cached_data = get_cached_rank_data(page, normalized_filter)
+        if cached_data:
+            all_results.extend(cached_data)
+            continue
 
+        try:
             url = f'https://fconline.nexon.com/datacenter/rank_inner?rt=manager&n4pageno={page}'
             res = session.get(url, timeout=5)
-            if res.status_code != 200:
-                return []
-
             soup = BeautifulSoup(res.text, 'html.parser')
             trs = soup.select('.tbody .tr')
             page_results = []
@@ -196,26 +191,15 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
                     rank += 1
                     continue
 
+            # 페이지 결과 캐시 저장
             if page_results:
-                rank_cache[cache_key] = page_results
-            return page_results
+                rank_cache[f"{page}_{normalized_filter}"] = page_results
+                all_results.extend(page_results)
 
-        except:
-            return []
-
-    # 병렬 처리 최적화 - 큰 배치로 처리
-    batch_size = 50  # 배치 크기 증가
-    for batch_start in range(start_page, end_page + 1, batch_size):
-        batch_end = min(batch_start + batch_size, end_page + 1)
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            futures = [executor.submit(fetch_page, page) for page in range(batch_start, batch_end)]
-            for future in as_completed(futures):
-                try:
-                    results = future.result()
-                    all_results.extend(results)
-                except:
-                    continue
-
+        except Exception as e:
+            print(f"⚠️ 페이지 {page} 처리 오류: {e}")
+            continue
+            
     return all_results
 
 def get_cached_match_data(nickname):
@@ -228,41 +212,36 @@ def get_cached_match_data(nickname):
     return None
 
 def fetch_user_data(nickname):
-    # 캐시 키에 팀컬러 필터 포함
-    cache_key = f"{nickname}_{datetime.now().hour}"
-    cached_data = get_cached_match_data(cache_key)
+    cached_data = get_cached_match_data(nickname)
     if cached_data:
         return cached_data
 
     try:
-        headers = {"x-nxopen-api-key": API_KEY}
-        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", headers=headers, timeout=5)
+        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
         if ouid_res.status_code != 200:
             return []
         ouid = ouid_res.json().get("ouid")
-        if not ouid:
-            return []
 
-        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", headers=headers, timeout=5)
+        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", timeout=5)
         if match_res.status_code != 200 or not match_res.json():
             return []
         match_id = match_res.json()[0]
 
-        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", headers=headers, timeout=5)
+        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
         if detail_res.status_code != 200:
             return []
         match_data = detail_res.json()
 
         results = []
-        for info in match_data.get("matchInfo", []):
-            if info.get("ouid") == ouid:
+        for info in match_data["matchInfo"]:
+            if info["ouid"] == ouid:
                 for p in info.get("player", []):
                     if p.get("spPosition") == 28:  # 감독
                         continue
-                    sp_id = p.get("spId")
-                    grade = p.get("spGrade")
-                    position = position_map.get(p.get("spPosition"), f"pos{p.get('spPosition')}")
-                    season_id = int(str(sp_id)[:3]) if sp_id else 0
+                    sp_id = p["spId"]
+                    grade = p["spGrade"]
+                    position = position_map.get(p["spPosition"], f"pos{p['spPosition']}")
+                    season_id = int(str(sp_id)[:3])
                     name = spid_map.get(sp_id, f"(Unknown:{sp_id})")
                     season_name = season_map.get(season_id, f"{season_id}")
                     results.append({
@@ -275,7 +254,7 @@ def fetch_user_data(nickname):
 
         # 결과 캐시 저장
         if results:
-            match_cache[cache_key] = results
+            match_cache[nickname] = results
         return results
     except:
         return []
@@ -329,37 +308,33 @@ def search():
         if not ranked_users:
             return jsonify({"error": "조건에 맞는 사용자가 없습니다."}), 404
 
-        # 팀컬러 필터링
-        filtered_users = [u for u in ranked_users if normalized_filter == "all" or normalized_filter in u[2]]
-        unique_users = len(filtered_users)
-
-        # 유저별 경기 데이터 수집 - 병렬 처리 최적화
+        # 유저별 경기 데이터 수집 최적화 - 상위 100명만
+        unique_users = len(ranked_users)
         player_records = []
-        batch_size = 50  # 배치 크기 증가
+        sample_size = min(100, unique_users)
         
-        for i in range(0, len(filtered_users), batch_size):
-            batch = filtered_users[i:i + batch_size]
-            with ThreadPoolExecutor(max_workers=50) as executor:
-                futures = [executor.submit(fetch_user_data, u[0]) for u in batch]
-                for future in as_completed(futures):
-                    try:
-                        result = future.result()
-                        if result:
-                            player_records.extend(result)
-                    except:
-                        continue
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = [executor.submit(fetch_user_data, u[0]) for u in ranked_users[:sample_size]]
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    if result:
+                        player_records.extend(result)
+                except Exception as e:
+                    print(f"Error fetching user data: {e}")
+                    continue
 
         df = pd.DataFrame(player_records)
         if df.empty:
             return jsonify({"error": "매치 데이터를 찾을 수 없습니다."}), 404
 
         # 기본 정보
-        top_user, top_rank, _, _, _ = min(filtered_users, key=lambda x: x[1])
+        top_user, top_rank, _, _, _ = min(ranked_users, key=lambda x: x[1])
 
         # 포메이션 정보
         formation_dict = {}
         teams_value = []
-        for nickname, rank, formation, value, _ in filtered_users:
+        for nickname, rank, formation, value, _ in ranked_users:
             formation_dict.setdefault(formation, []).append(nickname)
             teams_value.append(value)
 
@@ -376,8 +351,8 @@ def search():
             }
 
         # 점수 정보 계산
-        ranks = [r[1] for r in filtered_users]
-        scores = [r[4] for r in filtered_users]
+        ranks = [r[1] for r in ranked_users]
+        scores = [r[4] for r in ranked_users]
         avg_rank = round(sum(ranks) / len(ranks))
         avg_score = round(sum(scores) / len(scores))
         min_rank = min(ranks)
