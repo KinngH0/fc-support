@@ -422,6 +422,9 @@ def search():
             if group_df.empty:
                 continue
 
+            # 해당 포지션을 사용하는 전체 유저 수 계산
+            position_total_users = len(group_df["nickname"].unique())
+            
             top_players = (
                 group_df.groupby(["name", "season", "grade"])
                 .agg(count=("nickname", "count"), users=("nickname", list))
@@ -433,7 +436,7 @@ def search():
 
             positions[group_name] = []
             for i, row_data in top_players.iterrows():
-                percentage = round(row_data["count"] / unique_users * 100)
+                percentage = round(row_data["count"] / position_total_users * 100)
                 user_list = row_data["users"]
                 display_users = ", ".join(user_list[:3])
                 if len(user_list) > 3:
