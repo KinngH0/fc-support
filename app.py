@@ -6,8 +6,12 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 def serve():
     return send_from_directory('static', 'index.html')
 
-@app.route('/<path:path>')
+@app.route('/static/<path:path>')
 def serve_static(path):
+    return send_from_directory('static/static', path)
+
+@app.route('/<path:path>')
+def serve_root(path):
     return send_from_directory('static', path)
 
 @app.route('/healthz')
