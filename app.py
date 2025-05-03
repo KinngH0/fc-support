@@ -217,17 +217,18 @@ def fetch_user_data(nickname):
         return cached_data
 
     try:
-        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
+        headers = {"x-nxopen-api-key": API_KEY}
+        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", headers=headers, timeout=5)
         if ouid_res.status_code != 200:
             return []
         ouid = ouid_res.json().get("ouid")
 
-        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", timeout=5)
+        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", headers=headers, timeout=5)
         if match_res.status_code != 200 or not match_res.json():
             return []
         match_id = match_res.json()[0]
 
-        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", headers=headers, timeout=5)
         if detail_res.status_code != 200:
             return []
         match_data = detail_res.json()
@@ -256,7 +257,8 @@ def fetch_user_data(nickname):
         if results:
             match_cache[nickname] = results
         return results
-    except:
+    except Exception as e:
+        print(f"Error fetching user data for {nickname}: {str(e)}")
         return []
 
 @app.route('/')
