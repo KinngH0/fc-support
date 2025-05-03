@@ -343,20 +343,80 @@
 /* 테이블 디자인 통일 */
 .basic-info table,
 .formation-info table,
-.value-info table {
+.value-info table,
+.score-info table,
+.position-table table {
     margin-bottom: 0;
     border: 1px solid #dee2e6;
+    background-color: #ffffff;
 }
 
 .basic-info table th,
 .formation-info table th,
 .value-info table th,
-.basic-info table td,
-.formation-info table td,
-.value-info table td {
+.score-info table th,
+.position-table th {
+    background-color: #f8f9fa;
     padding: 12px 15px;
     border: 1px solid #dee2e6;
     vertical-align: middle;
+}
+
+.basic-info table td,
+.formation-info table td,
+.value-info table td,
+.score-info table td,
+.position-table td {
+    padding: 12px 15px;
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+/* 다크모드 스타일 */
+[data-theme="dark"] .basic-info table,
+[data-theme="dark"] .formation-info table,
+[data-theme="dark"] .value-info table,
+[data-theme="dark"] .score-info table,
+[data-theme="dark"] .position-table table {
+    background-color: #2d2d2d;
+    border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .basic-info table th,
+[data-theme="dark"] .formation-info table th,
+[data-theme="dark"] .value-info table th,
+[data-theme="dark"] .score-info table th,
+[data-theme="dark"] .position-table th {
+    background-color: #3d3d3d;
+    color: #ffffff;
+    border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .basic-info table td,
+[data-theme="dark"] .formation-info table td,
+[data-theme="dark"] .value-info table td,
+[data-theme="dark"] .score-info table td,
+[data-theme="dark"] .position-table td {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .basic-info table tr:hover td,
+[data-theme="dark"] .formation-info table tr:hover td,
+[data-theme="dark"] .value-info table tr:hover td,
+[data-theme="dark"] .score-info table tr:hover td,
+[data-theme="dark"] .position-table tr:hover td {
+    background-color: #3d3d3d;
+}
+
+[data-theme="dark"] .basic-info h5,
+[data-theme="dark"] .formation-info h5,
+[data-theme="dark"] .value-info h5,
+[data-theme="dark"] .score-info h5,
+[data-theme="dark"] .position-info h5,
+[data-theme="dark"] .position-table h6 {
+    color: #ffffff;
 }
 
 /* 섹션 간격 통일 */
