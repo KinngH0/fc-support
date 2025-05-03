@@ -85,7 +85,7 @@
                                 <thead>
                                     <tr>
                                         <th>포메이션</th>
-                                        <th>사용률</th>
+                                        <th class="sortable" data-sort="percent">사용률 <i class="fas fa-sort-down"></i></th>
                                         <th>사용자</th>
                                     </tr>
                                 </thead>
@@ -259,6 +259,16 @@
     border-top-color: #4eb655;
 }
 
+/* 이용중인 유저 스타일 */
+.user-count {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+[data-theme="dark"] .user-count {
+    color: #adb5bd;
+}
+
 /* 섹션 간격 통일 */
 .basic-info,
 .formation-info,
@@ -312,13 +322,15 @@
 /* 기본 정보 테이블 열 너비 */
 .basic-info table th,
 .formation-info table th,
-.value-info table th {
+.value-info table th,
+.score-info table th {
     width: 150px;
 }
 
 .basic-info table td,
 .formation-info table td,
-.value-info table td {
+.value-info table td,
+.score-info table td {
     width: calc(100% - 150px);
 }
 
@@ -425,14 +437,45 @@ document.addEventListener('DOMContentLoaded', function() {
         // 포메이션 정보 업데이트
         const formationTableBody = document.getElementById('formationTableBody');
         formationTableBody.innerHTML = '';
-        Object.entries(data.formations).forEach(([formation, info]) => {
+        
+        // 포메이션 데이터를 배열로 변환하고 사용률로 정렬
+        const formationArray = Object.entries(data.formations).map(([formation, info]) => ({
+            formation,
+            percent: info.percent,
+            count: info.count,
+            users: info.users
+        }));
+        
+        formationArray.sort((a, b) => b.percent - a.percent);
+        
+        formationArray.forEach(info => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${formation}</td>
+                <td>${info.formation}</td>
                 <td>${info.percent}% (${info.count}명)</td>
                 <td>${info.users}</td>
             `;
             formationTableBody.appendChild(row);
+        });
+
+        // 포메이션 테이블 정렬 기능
+        const formationSortHeader = document.querySelector('.formation-info th.sortable');
+        formationSortHeader.addEventListener('click', function() {
+            const currentSort = this.dataset.order || 'desc';
+            const newSort = currentSort === 'desc' ? 'asc' : 'desc';
+            this.dataset.order = newSort;
+            
+            const icon = this.querySelector('i');
+            icon.className = newSort === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            
+            const rows = Array.from(formationTableBody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                const aValue = parseFloat(a.children[1].textContent);
+                const bValue = parseFloat(b.children[1].textContent);
+                return newSort === 'asc' ? aValue - bValue : bValue - aValue;
+            });
+            
+            rows.forEach(row => formationTableBody.appendChild(row));
         });
 
         // 구단 가치 정보 업데이트
@@ -471,7 +514,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const table = document.createElement('div');
                 table.className = 'position-table';
                 table.innerHTML = `
-                    <h6 class="mb-3">${position}</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0">${position}</h6>
+                        <span class="user-count">이용중인 유저: ${players.total_users}명</span>
+                    </div>
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -485,13 +531,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${players.map(p => `
+                                ${players.players.map(p => `
                                     <tr>
                                         <td>${p.rank}</td>
                                         <td>${p.name}</td>
                                         <td>${p.season}</td>
                                         <td>${p.grade}카</td>
-                                        <td>${p.percent}% (${p.count}명)</td>
+                                        <td>${p.percent}</td>
                                         <td>${p.users}</td>
                                     </tr>
                                 `).join('')}

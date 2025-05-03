@@ -15,6 +15,7 @@ from functools import lru_cache
 import time
 from threading import Timer
 from collections import OrderedDict
+import atexit
 
 app = Flask(__name__)
 API_KEY = os.getenv('FC_API_KEY')
@@ -23,6 +24,14 @@ API_KEY = os.getenv('FC_API_KEY')
 rank_cache = {}
 match_cache = {}
 cache_timer = None
+
+# 전역 ThreadPoolExecutor 생성
+executor = ThreadPoolExecutor(max_workers=20)
+
+# 종료 시 executor 정리
+@atexit.register
+def cleanup():
+    executor.shutdown(wait=True)
 
 def get_next_hour():
     """다음 정각까지 남은 시간(초)을 반환"""
@@ -150,7 +159,7 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
 
         try:
             url = f'https://fconline.nexon.com/datacenter/rank_inner?rt=manager&n4pageno={page}'
-            res = session.get(url, timeout=5)
+            res = session.get(url, timeout=3)
             soup = BeautifulSoup(res.text, 'html.parser')
             trs = soup.select('.tbody .tr')
             page_results = []
@@ -194,7 +203,6 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
                     rank += 1
                     continue
 
-            # 페이지 결과 캐시 저장
             if page_results:
                 rank_cache[f"{page}_{normalized_filter}"] = page_results
                 return page_results
@@ -204,20 +212,22 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
             return []
 
     # 병렬 처리를 위한 페이지 그룹화
-    CHUNK_SIZE = 50  # 한 번에 50페이지씩 처리
+    CHUNK_SIZE = 25
     chunks = [(i, min(i + CHUNK_SIZE - 1, end_page)) for i in range(start_page, end_page + 1, CHUNK_SIZE)]
     
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = []
-        for chunk_start, chunk_end in chunks:
-            chunk_pages = range(chunk_start, chunk_end + 1)
-            chunk_futures = [executor.submit(fetch_page, page) for page in chunk_pages]
-            futures.extend(chunk_futures)
-            
-        for future in as_completed(futures):
+    futures = []
+    for chunk_start, chunk_end in chunks:
+        chunk_pages = range(chunk_start, chunk_end + 1)
+        chunk_futures = [executor.submit(fetch_page, page) for page in chunk_pages]
+        futures.extend(chunk_futures)
+        
+    for future in as_completed(futures):
+        try:
             result = future.result()
             if result:
                 all_results.extend(result)
+        except Exception as e:
+            print(f"Future 처리 중 오류 발생: {e}")
     
     return all_results
 
@@ -237,7 +247,7 @@ def fetch_user_data(nickname):
 
     try:
         session = get_session()
-        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
+        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=3)
         if ouid_res.status_code != 200:
             print(f"Failed to get OUID for {nickname}: {ouid_res.status_code}")
             return []
@@ -246,8 +256,7 @@ def fetch_user_data(nickname):
             print(f"No OUID found for {nickname}")
             return []
 
-        # 최근 매치 기록 여러 개 조회
-        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=10", timeout=5)
+        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=10", timeout=3)
         if match_res.status_code != 200:
             print(f"Failed to get matches for {nickname}: {match_res.status_code}")
             return []
@@ -257,11 +266,10 @@ def fetch_user_data(nickname):
             print(f"No matches found for {nickname}")
             return []
 
-        # 여러 매치에서 선수 데이터 수집
         results = []
-        for match_id in matches[:3]:  # 최근 3경기만 확인
+        for match_id in matches[:2]:  # 매치 수 감소
             try:
-                detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+                detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=3)
                 if detail_res.status_code != 200:
                     print(f"Failed to get match detail for {match_id}: {detail_res.status_code}")
                     continue
@@ -270,7 +278,7 @@ def fetch_user_data(nickname):
                 for info in match_data.get("matchInfo", []):
                     if info["ouid"] == ouid:
                         for p in info.get("player", []):
-                            if p.get("spPosition") == 28:  # 감독
+                            if p.get("spPosition") == 28:
                                 continue
                             sp_id = p["spId"]
                             grade = p["spGrade"]
@@ -289,7 +297,6 @@ def fetch_user_data(nickname):
                 print(f"Error processing match {match_id} for {nickname}: {e}")
                 continue
 
-        # 결과 캐시 저장
         if results:
             match_cache[nickname] = results
             print(f"Cached {len(results)} players for {nickname}")
@@ -340,7 +347,7 @@ def search():
 
         normalized_filter = team_color.replace(" ", "").lower()
         
-        # 랭커 수집 - 한 번에 전체 페이지 처리
+        # 랭커 수집
         pages = (rank_limit - 1) // 20 + 1
         ranked_users = parse_rank_pages(1, pages, normalized_filter)
         
@@ -350,21 +357,20 @@ def search():
         if not ranked_users:
             return jsonify({"error": "조건에 맞는 사용자가 없습니다."}), 404
 
-        # 유저별 경기 데이터 수집 최적화 - 상위 100명만
+        # 유저별 경기 데이터 수집
         unique_users = len(ranked_users)
         player_records = []
         sample_size = min(100, unique_users)
         
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            futures = [executor.submit(fetch_user_data, u[0]) for u in ranked_users[:sample_size]]
-            for future in as_completed(futures):
-                try:
-                    result = future.result()
-                    if result:
-                        player_records.extend(result)
-                except Exception as e:
-                    print(f"Error fetching user data: {e}")
-                    continue
+        futures = [executor.submit(fetch_user_data, u[0]) for u in ranked_users[:sample_size]]
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                if result:
+                    player_records.extend(result)
+            except Exception as e:
+                print(f"Error fetching user data: {e}")
+                continue
 
         df = pd.DataFrame(player_records)
         if df.empty:
@@ -445,33 +451,44 @@ def search():
             if group_df.empty:
                 continue
 
-            # 해당 포지션을 사용하는 전체 유저 수 계산
+            # 해당 포지션을 사용하는 전체 유저 수
             position_total_users = len(group_df["nickname"].unique())
             
             top_players = (
                 group_df.groupby(["name", "season", "grade"])
-                .agg(count=("nickname", "count"), users=("nickname", list))
+                .agg(
+                    users=("nickname", lambda x: list(set(x)))  # 중복 제거된 유저 리스트
+                )
                 .reset_index()
-                .sort_values(by="count", ascending=False)
-                .head(top_n)
-                .reset_index(drop=True)
             )
+            
+            # 유저 수를 계산하여 새로운 컬럼 추가
+            top_players["user_count"] = top_players["users"].apply(len)
+            # 유저 수로 정렬
+            top_players = top_players.sort_values("user_count", ascending=False)
+            top_players = top_players.head(top_n).reset_index(drop=True)
 
-            positions[group_name] = []
+            positions[group_name] = {
+                "total_users": position_total_users,  # 전체 사용자 수 추가
+                "players": []
+            }
+            
             for i, row_data in top_players.iterrows():
-                percentage = round(row_data["count"] / position_total_users * 100)
                 user_list = row_data["users"]
+                user_count = row_data["user_count"]
+                percentage = round(user_count / position_total_users * 100)
+                
                 display_users = ", ".join(user_list[:3])
                 if len(user_list) > 3:
                     display_users += f" 외 {len(user_list) - 3}명"
 
-                positions[group_name].append({
+                positions[group_name]["players"].append({
                     "rank": i + 1,
                     "name": row_data["name"],
                     "season": row_data["season"],
                     "grade": row_data["grade"],
-                    "percent": percentage,
-                    "count": row_data["count"],
+                    "percent": f"{percentage}% ({user_count}명)",  # 중복 제거
+                    "count": user_count,
                     "users": display_users
                 })
 
