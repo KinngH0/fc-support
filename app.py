@@ -64,16 +64,20 @@ def create_session():
     }
     session.headers.update(headers)
     retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[429, 500, 502, 503, 504])
-    adapter = HTTPAdapter(max_retries=retries, pool_connections=100, pool_maxsize=100)
+    adapter = HTTPAdapter(max_retries=retries, pool_connections=200, pool_maxsize=200)
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
 
+# 세션 풀 생성
+session_pool = []
+MAX_SESSIONS = 10
+
 def get_session():
-    global session
-    if not session:
-        session = create_session()
-    return session
+    global session_pool
+    if not session_pool:
+        session_pool = [create_session() for _ in range(MAX_SESSIONS)]
+    return session_pool[hash(time.time()) % len(session_pool)]
 
 # 메타데이터 캐싱
 session = create_session()
@@ -139,11 +143,10 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
     session = get_session()
     all_results = []
     
-    for page in range(start_page, end_page + 1):
+    def fetch_page(page):
         cached_data = get_cached_rank_data(page, normalized_filter)
         if cached_data:
-            all_results.extend(cached_data)
-            continue
+            return cached_data
 
         try:
             url = f'https://fconline.nexon.com/datacenter/rank_inner?rt=manager&n4pageno={page}'
@@ -194,12 +197,28 @@ def parse_rank_pages(start_page, end_page, normalized_filter):
             # 페이지 결과 캐시 저장
             if page_results:
                 rank_cache[f"{page}_{normalized_filter}"] = page_results
-                all_results.extend(page_results)
+                return page_results
 
         except Exception as e:
             print(f"⚠️ 페이지 {page} 처리 오류: {e}")
-            continue
+            return []
+
+    # 병렬 처리를 위한 페이지 그룹화
+    CHUNK_SIZE = 50  # 한 번에 50페이지씩 처리
+    chunks = [(i, min(i + CHUNK_SIZE - 1, end_page)) for i in range(start_page, end_page + 1, CHUNK_SIZE)]
+    
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for chunk_start, chunk_end in chunks:
+            chunk_pages = range(chunk_start, chunk_end + 1)
+            chunk_futures = [executor.submit(fetch_page, page) for page in chunk_pages]
+            futures.extend(chunk_futures)
             
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                all_results.extend(result)
+    
     return all_results
 
 def get_cached_match_data(nickname):
