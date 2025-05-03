@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">팀컬러 조회</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="team">팀 선택</label>
+                                <select class="form-select" id="team">
+                                    <option value="all">전체 팀</option>
+                                    <option value="team1">팀 1</option>
+                                    <option value="team2">팀 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="color">컬러 선택</label>
+                                <select class="form-select" id="color">
+                                    <option value="all">전체 컬러</option>
+                                    <option value="red">레드</option>
+                                    <option value="blue">블루</option>
+                                    <option value="green">그린</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>팀명</th>
+                                            <th>주요 컬러</th>
+                                            <th>보조 컬러</th>
+                                            <th>사용 빈도</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 데이터가 동적으로 로드될 위치 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

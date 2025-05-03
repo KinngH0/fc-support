@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FC Support</title>
+    <title>FC SUPPORT</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'GmarketSansMedium';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'GmarketSansMedium', sans-serif;
+        }
+
         body {
             background-color: #f0f2f5;
             min-height: 100vh;
@@ -19,6 +31,8 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             position: fixed;
             height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: column;
         }
         .content {
             margin-left: 282px;
@@ -31,54 +45,129 @@
             font-weight: 500;
             margin: 4px 0;
             transition: all 0.2s ease;
+            font-size: 1.1rem;
         }
         .nav-link:hover {
             background-color: #f8f9fa;
             color: #344767;
         }
         .nav-link.active {
-            background-color: #e91e63;
+            background-color: #4eb655;
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(233, 30, 99, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(78, 182, 85, 0.2);
         }
         .nav-link i {
             margin-right: 8px;
+        }
+        .theme-toggle {
+            margin-top: auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+        }
+        .theme-toggle:hover {
+            background-color: #f8f9fa;
+        }
+        .theme-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+        .theme-toggle .sun-icon {
+            display: block;
+        }
+        .theme-toggle .moon-icon {
+            display: none;
+        }
+        [data-theme="dark"] .theme-toggle .sun-icon {
+            display: none;
+        }
+        [data-theme="dark"] .theme-toggle .moon-icon {
+            display: block;
+        }
+        [data-theme="dark"] {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .sidenav {
+            background-color: #2d2d2d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .nav-link {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .nav-link:hover {
+            background-color: #3d3d3d;
+        }
+        [data-theme="dark"] .theme-toggle:hover {
+            background-color: #3d3d3d;
+        }
+        [data-theme="dark"] .theme-toggle {
+            border-color: #3d3d3d;
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="sidenav">
-        <div class="d-flex align-items-center mb-4 ps-2">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="32">
-            <h5 class="ms-3 mb-0">FC Support</h5>
+        <div class="d-flex align-items-center justify-content-center mb-4 ps-2">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="64">
+            </a>
         </div>
         <nav class="nav flex-column">
-            <a href="/" class="nav-link active">
-                <i class="fas fa-home"></i>
-                대시보드
+            <a href="/pickrate" class="nav-link {% if request.endpoint == 'pickrate' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                픽률 조회
             </a>
-            <a href="/tables" class="nav-link">
-                <i class="fas fa-table"></i>
-                테이블
+            <a href="/teamcolor" class="nav-link {% if request.endpoint == 'teamcolor' %}active{% endif %}">
+                <i class="fas fa-palette"></i>
+                팀컬러 조회
             </a>
-            <a href="/billing" class="nav-link">
-                <i class="fas fa-receipt"></i>
-                결제
-            </a>
-            <a href="/notifications" class="nav-link">
-                <i class="fas fa-bell"></i>
-                알림
-            </a>
-            <a href="/profile" class="nav-link">
-                <i class="fas fa-user"></i>
-                프로필
+            <a href="/efficiency" class="nav-link {% if request.endpoint == 'efficiency' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                효율 조회
             </a>
         </nav>
+        <div class="theme-toggle" id="themeToggle">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+            </svg>
+        </div>
     </div>
     <div class="content">
         {% block content %}{% endblock %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const body = document.body;
+
+            // 테마 상태 확인
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            if (currentTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+            }
+
+            // 테마 토글
+            themeToggle.addEventListener('click', function() {
+                if (body.getAttribute('data-theme') === 'dark') {
+                    body.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
 </body>
 </html> 

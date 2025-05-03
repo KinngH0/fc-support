@@ -1,0 +1,608 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">픽률 조회</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-group">
+                                <label for="rankRange">랭킹 범위</label>
+                                <input type="number" class="form-control" id="rankRange" min="0" max="10000" placeholder="조회하실 랭킹 범위">
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="form-group">
+                                <label for="teamColor">팀컬러</label>
+                                <div class="team-color-container">
+                                    <input type="text" class="form-control" id="teamColor" placeholder="조회하실 팀컬러" autocomplete="off">
+                                    <div class="team-color-list" id="teamColorList" style="display: none;">
+                                        <div class="team-color-scroll">
+                                            <div class="team-color-item" data-value="독일">독일</div>
+                                            <div class="team-color-item" data-value="맨체스터 유나이티드">맨체스터 유나이티드</div>
+                                            <div class="team-color-item" data-value="아약스">아약스</div>
+                                            <div class="team-color-item" data-value="프랑스">프랑스</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="form-group">
+                                <label for="topN">TOP N</label>
+                                <input type="number" class="form-control" id="topN" min="0" max="10" placeholder="포지션별로 몇 위까지 출력할지 입력">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn" id="searchBtn" style="background-color: #4eb655; color: white;">조회</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 검색 결과 영역 -->
+    <div class="row mt-3" id="searchResults" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">검색 결과</h4>
+                    <button type="button" class="btn" id="excelBtn" style="background-color: #28a745; color: white;">
+                        엑셀 저장
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- 기본 정보 -->
+                    <div class="basic-info mb-4">
+                        <h5>기본 정보</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>조회 팀</th>
+                                        <td id="teamColorInfo">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>조회 인원</th>
+                                        <td id="userCountInfo">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>최고 랭커</th>
+                                        <td id="topRankerInfo">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 포메이션 정보 -->
+                    <div class="formation-info mb-4">
+                        <h5>포메이션 픽률</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>포메이션</th>
+                                        <th>사용률</th>
+                                        <th>사용자</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="formationTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 구단 가치 정보 -->
+                    <div class="value-info mb-4">
+                        <h5>구단 가치 정보</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody id="valueInfoTable">
+                                    <tr>
+                                        <th>평균</th>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>최고</th>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>최저</th>
+                                        <td>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 점수 정보 -->
+                    <div class="score-info mb-4">
+                        <h5>점수 정보</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody id="scoreInfoTable">
+                                    <tr>
+                                        <th>평균</th>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>최고</th>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>최저</th>
+                                        <td>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 포지션별 선수 픽률 -->
+                    <div class="position-info">
+                        <h5>포지션별 선수 픽률</h5>
+                        <div id="positionInfo">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.team-color-container {
+    position: relative;
+}
+
+.team-color-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.team-color-scroll {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.team-color-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.team-color-item:hover {
+    background-color: #f8f9fa;
+}
+
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #4eb655;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+.position-table {
+    margin-bottom: 2rem;
+}
+
+.position-table th {
+    background-color: #f8f9fa;
+}
+
+.position-table table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.position-table th,
+.position-table td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    text-align: left;
+}
+
+.position-table th:nth-child(1),
+.position-table td:nth-child(1) {
+    width: 60px;  /* 순위 */
+    text-align: center;  /* 중앙 정렬 */
+}
+
+.position-table th:nth-child(2),
+.position-table td:nth-child(2) {
+    width: 200px;  /* 선수명 */
+}
+
+.position-table th:nth-child(3),
+.position-table td:nth-child(3) {
+    width: 150px;  /* 시즌 */
+}
+
+.position-table th:nth-child(4),
+.position-table td:nth-child(4) {
+    width: 80px;  /* 강화 */
+}
+
+.position-table th:nth-child(5),
+.position-table td:nth-child(5) {
+    width: 150px;  /* 사용률 */
+}
+
+.position-table th:nth-child(6),
+.position-table td:nth-child(6) {
+    width: auto;  /* 사용자 - 남은 공간 자동 할당 */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 테이블 열 너비 통일 */
+.basic-info table th,
+.formation-info table th,
+.value-info table th {
+    width: 150px;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.basic-info table td,
+.formation-info table td,
+.value-info table td {
+    width: calc(100% - 150px);
+}
+
+/* 포메이션 테이블 열 너비 조정 */
+.formation-info table th:nth-child(1) {
+    width: 150px;
+}
+.formation-info table th:nth-child(2) {
+    width: 200px;
+}
+.formation-info table th:nth-child(3) {
+    width: auto;
+}
+
+/* 테이블 디자인 통일 */
+.basic-info table,
+.formation-info table,
+.value-info table {
+    margin-bottom: 0;
+    border: 1px solid #dee2e6;
+}
+
+.basic-info table th,
+.formation-info table th,
+.value-info table th,
+.basic-info table td,
+.formation-info table td,
+.value-info table td {
+    padding: 12px 15px;
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+/* 섹션 간격 통일 */
+.basic-info,
+.formation-info,
+.value-info {
+    margin-bottom: 2rem !important;
+}
+
+.basic-info h5,
+.formation-info h5,
+.value-info h5 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* 점수 정보 테이블 스타일 추가 */
+.score-info table th,
+.score-info table td {
+    width: 150px;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.score-info table td {
+    width: calc(100% - 150px);
+}
+
+.score-info table {
+    margin-bottom: 0;
+    border: 1px solid #dee2e6;
+}
+
+.score-info h5 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+</style>
+
+<div id="loadingOverlay" class="loading" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">데이터를 수집하고 있습니다...</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const teamColorInput = document.getElementById('teamColor');
+    const teamColorList = document.getElementById('teamColorList');
+    const teamColorItems = document.querySelectorAll('.team-color-item');
+    const searchBtn = document.getElementById('searchBtn');
+    const excelBtn = document.getElementById('excelBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    const searchResults = document.getElementById('searchResults');
+
+    // 입력 필드 클릭 시 목록 표시
+    teamColorInput.addEventListener('click', function() {
+        teamColorList.style.display = 'block';
+    });
+
+    // 목록 항목 클릭 시 값 선택
+    teamColorItems.forEach(item => {
+        item.addEventListener('click', function() {
+            teamColorInput.value = this.dataset.value;
+            teamColorList.style.display = 'none';
+        });
+    });
+
+    // 입력 필드에 입력 시 필터링
+    teamColorInput.addEventListener('input', function() {
+        const searchText = this.value.toLowerCase();
+        teamColorItems.forEach(item => {
+            const itemText = item.textContent.toLowerCase();
+            item.style.display = itemText.includes(searchText) ? 'block' : 'none';
+        });
+        teamColorList.style.display = 'block';
+    });
+
+    // 다른 곳 클릭 시 목록 숨기기
+    document.addEventListener('click', function(e) {
+        if (!teamColorInput.contains(e.target) && !teamColorList.contains(e.target)) {
+            teamColorList.style.display = 'none';
+        }
+    });
+
+    // 입력 필드의 placeholder 관리
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.setAttribute('data-placeholder', this.placeholder);
+            this.placeholder = '';
+        });
+
+        input.addEventListener('blur', function() {
+            if (!this.value) {
+                this.placeholder = this.getAttribute('data-placeholder');
+            }
+        });
+    });
+
+    // 숫자 입력 필드 제한
+    document.getElementById('rankRange').addEventListener('input', function() {
+        if (this.value > 10000) this.value = 10000;
+        if (this.value < 0) this.value = 0;
+    });
+
+    document.getElementById('topN').addEventListener('input', function() {
+        if (this.value > 10) this.value = 10;
+        if (this.value < 0) this.value = 0;
+    });
+
+    // 검색 결과 표시 함수
+    function displayResults(data) {
+        // 기본 정보 업데이트
+        document.getElementById('teamColorInfo').textContent = data.teamColor || 'ALL';
+        document.getElementById('userCountInfo').textContent = `${data.uniqueUsers}명`;
+        document.getElementById('topRankerInfo').textContent = `${data.topUser} (${data.topRank}위)`;
+
+        // 포메이션 정보 업데이트
+        const formationTableBody = document.getElementById('formationTableBody');
+        formationTableBody.innerHTML = '';
+        Object.entries(data.formations).forEach(([formation, info]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${formation}</td>
+                <td>${info.percent}% (${info.count}명)</td>
+                <td>${info.users}</td>
+            `;
+            formationTableBody.appendChild(row);
+        });
+
+        // 구단 가치 정보 업데이트
+        const valueInfoTable = document.getElementById('valueInfoTable');
+        valueInfoTable.innerHTML = data.valueInfo.rows.map(row => `
+            <tr>
+                <th>${row.label}</th>
+                <td>${row.value}</td>
+            </tr>
+        `).join('');
+
+        // 점수 정보 업데이트
+        const scoreInfoTable = document.getElementById('scoreInfoTable');
+        scoreInfoTable.innerHTML = data.scoreInfo.rows.map(row => `
+            <tr>
+                <th>${row.label}</th>
+                <td>${row.value}</td>
+            </tr>
+        `).join('');
+
+        // 포지션별 선수 픽률 업데이트
+        const positionInfo = document.getElementById('positionInfo');
+        positionInfo.innerHTML = '';
+        
+        // 포지션 순서 정의
+        const positionOrder = [
+            "ST", "CF", "LW", "RW", "CAM", 
+            "LAM", "RAM", "LM", "RM", "CM",
+            "CDM", "LB", "CB", "RB", "GK"
+        ];
+
+        // 순서대로 포지션 데이터 표시
+        positionOrder.forEach(position => {
+            if (data.positions[position]) {
+                const players = data.positions[position];
+                const table = document.createElement('div');
+                table.className = 'position-table';
+                table.innerHTML = `
+                    <h6 class="mb-3">${position}</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>순위</th>
+                                    <th>선수명</th>
+                                    <th>시즌</th>
+                                    <th>강화</th>
+                                    <th>사용률</th>
+                                    <th>사용자</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${players.map(p => `
+                                    <tr>
+                                        <td>${p.rank}</td>
+                                        <td>${p.name}</td>
+                                        <td>${p.season}</td>
+                                        <td>${p.grade}카</td>
+                                        <td>${p.percent}% (${p.count}명)</td>
+                                        <td>${p.users}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                positionInfo.appendChild(table);
+            }
+        });
+
+        // 결과 영역 표시
+        searchResults.style.display = 'block';
+    }
+
+    // 조회 버튼 클릭 이벤트
+    searchBtn.addEventListener('click', async function() {
+        const rankRange = document.getElementById('rankRange').value;
+        const teamColor = document.getElementById('teamColor').value || 'all';
+        const topN = document.getElementById('topN').value;
+
+        if (!rankRange) {
+            alert('랭킹 범위를 입력해주세요.');
+            return;
+        }
+        if (!topN) {
+            alert('TOP N을 입력해주세요.');
+            return;
+        }
+
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = '데이터를 수집하고 있습니다...';
+
+        try {
+            const response = await fetch('/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    rankRange: parseInt(rankRange),
+                    teamColor: teamColor,
+                    topN: parseInt(topN)
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || '데이터 수집 중 오류가 발생했습니다.');
+            }
+
+            const data = await response.json();
+            displayResults(data);
+            loadingOverlay.style.display = 'none';
+
+        } catch (error) {
+            alert(error.message);
+            loadingOverlay.style.display = 'none';
+        }
+    });
+
+    // 엑셀 저장 버튼 클릭 이벤트
+    excelBtn.addEventListener('click', async function() {
+        if (searchResults.style.display === 'none') {
+            alert('먼저 데이터를 조회해주세요.');
+            return;
+        }
+
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = '엑셀 파일을 생성하고 있습니다...';
+
+        try {
+            const response = await fetch('/api/excel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('엑셀 파일 생성 중 오류가 발생했습니다.');
+            }
+
+            const data = await response.json();
+            window.location.href = `/download/${encodeURIComponent(data.file_name)}`;
+            
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 1000);
+
+        } catch (error) {
+            alert(error.message);
+            loadingOverlay.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

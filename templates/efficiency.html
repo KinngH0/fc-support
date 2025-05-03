@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">효율 조회</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="player">선수 선택</label>
+                                <select class="form-select" id="player">
+                                    <option value="all">전체 선수</option>
+                                    <option value="player1">선수 1</option>
+                                    <option value="player2">선수 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="position">포지션 선택</label>
+                                <select class="form-select" id="position">
+                                    <option value="all">전체 포지션</option>
+                                    <option value="top">탑</option>
+                                    <option value="jungle">정글</option>
+                                    <option value="mid">미드</option>
+                                    <option value="adc">원딜</option>
+                                    <option value="support">서포터</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="metric">지표 선택</label>
+                                <select class="form-select" id="metric">
+                                    <option value="kda">KDA</option>
+                                    <option value="damage">딜량</option>
+                                    <option value="vision">시야 점수</option>
+                                    <option value="gold">골드 효율</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>선수명</th>
+                                            <th>포지션</th>
+                                            <th>KDA</th>
+                                            <th>평균 딜량</th>
+                                            <th>시야 점수</th>
+                                            <th>골드 효율</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- 데이터가 동적으로 로드될 위치 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
