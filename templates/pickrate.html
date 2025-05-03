@@ -23,10 +23,6 @@
                                     <input type="text" class="form-control" id="teamColor" placeholder="조회하실 팀컬러" autocomplete="off">
                                     <div class="team-color-list" id="teamColorList" style="display: none;">
                                         <div class="team-color-scroll">
-                                            <div class="team-color-item" data-value="독일">독일</div>
-                                            <div class="team-color-item" data-value="맨체스터 유나이티드">맨체스터 유나이티드</div>
-                                            <div class="team-color-item" data-value="아약스">아약스</div>
-                                            <div class="team-color-item" data-value="프랑스">프랑스</div>
                                         </div>
                                     </div>
                                 </div>
@@ -345,16 +341,24 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/teamcolors.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const teamColorInput = document.getElementById('teamColor');
     const teamColorList = document.getElementById('teamColorList');
-    const teamColorItems = document.querySelectorAll('.team-color-item');
     const searchBtn = document.getElementById('searchBtn');
     const excelBtn = document.getElementById('excelBtn');
     const loadingOverlay = document.getElementById('loadingOverlay');
     const loadingText = document.getElementById('loadingText');
     const searchResults = document.getElementById('searchResults');
+
+    // 팀컬러 리스트 동적 생성
+    const teamColorScroll = document.querySelector('.team-color-scroll');
+    teamColorScroll.innerHTML = teamColors.map(team => `
+        <div class="team-color-item" data-value="${team}">${team}</div>
+    `).join('');
+    
+    const teamColorItems = document.querySelectorAll('.team-color-item');
 
     // 입력 필드 클릭 시 목록 표시
     teamColorInput.addEventListener('click', function() {
