@@ -80,7 +80,7 @@ def get_session():
     return session_pool[hash(time.time()) % len(session_pool)]
 
 # 메타데이터 캐싱
-session = create_session()
+metadata_session = create_session()
 spid_data = None
 season_data = None
 position_data = None
@@ -110,7 +110,7 @@ def load_metadata():
     global spid_data, season_data, position_data, spid_map, season_map, position_map
     
     def load_meta(url):
-        res = session.get(url, timeout=5)
+        res = metadata_session.get(url, timeout=5)
         return res.json() if res.status_code == 200 else []
 
     spid_data = load_meta("https://open.api.nexon.com/static/fconline/meta/spid.json")
