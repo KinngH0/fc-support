@@ -191,6 +191,7 @@
         .table {
             margin-bottom: 0;
             border: 1px solid #dee2e6;
+            background-color: transparent;
         }
 
         .table th {
@@ -214,7 +215,7 @@
 
         /* 다크모드 테이블 스타일 */
         [data-theme="dark"] .table {
-            background-color: #1a1a1a;
+            background-color: transparent;
             border-color: #4d4d4d;
             color: #e0e0e0;
         }
@@ -232,7 +233,7 @@
         }
 
         [data-theme="dark"] .table-hover tbody tr:hover {
-            background-color: #2d2d2d;
+            background-color: #2d2d2d !important;
         }
 
         /* 테이블 반응형 스타일 */
@@ -252,13 +253,8 @@
         }
 
         [data-theme="dark"] .sortable i {
+            color: #e0e0e0;
             margin-left: 5px;
-            color: #999;
-        }
-
-        [data-theme="dark"] .sortable[data-order="asc"] i,
-        [data-theme="dark"] .sortable[data-order="desc"] i {
-            color: #4eb655;
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
