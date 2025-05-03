@@ -336,34 +336,6 @@
 .formation-info table th:nth-child(3) {
     width: auto;
 }
-
-/* 정렬 버튼 스타일 */
-.sortable {
-    cursor: pointer;
-    position: relative;
-    user-select: none;
-}
-
-.sortable i {
-    margin-left: 5px;
-    transition: transform 0.2s ease;
-}
-
-.sortable.asc i {
-    transform: rotate(180deg);
-}
-
-.sortable.desc i {
-    transform: rotate(0deg);
-}
-
-.sortable:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="dark"] .sortable:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
 </style>
 
 <div id="loadingOverlay" class="loading" style="display: none;">
@@ -524,6 +496,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 positionInfo.appendChild(table);
+
+                // 정렬 기능 추가
+                const sortableHeaders = table.querySelectorAll('.sortable');
+                sortableHeaders.forEach(header => {
+                    header.addEventListener('click', function() {
+                        const sortKey = this.dataset.sort;
+                        const tbody = this.closest('table').querySelector('tbody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        const currentSort = this.dataset.order || 'asc';
+                        const newSort = currentSort === 'asc' ? 'desc' : 'asc';
+                        
+                        // 모든 헤더의 정렬 방향 초기화
+                        sortableHeaders.forEach(h => {
+                            h.dataset.order = '';
+                            const icon = h.querySelector('i');
+                            icon.className = 'fas fa-sort';
+                        });
+                        
+                        // 현재 헤더의 정렬 방향 설정
+                        this.dataset.order = newSort;
+                        const icon = this.querySelector('i');
+                        icon.className = newSort === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                        
+                        // 데이터 정렬
+                        rows.sort((a, b) => {
+                            const aValue = a.children[this.cellIndex].textContent;
+                            const bValue = b.children[this.cellIndex].textContent;
+                            
+                            if (sortKey === 'rank' || sortKey === 'percent') {
+                                const aNum = parseFloat(aValue);
+                                const bNum = parseFloat(bValue);
+                                return newSort === 'asc' ? aNum - bNum : bNum - aNum;
+                            } else {
+                                return newSort === 'asc' 
+                                    ? aValue.localeCompare(bValue, 'ko-KR')
+                                    : bValue.localeCompare(aValue, 'ko-KR');
+                            }
+                        });
+                        
+                        // 정렬된 행을 테이블에 다시 추가
+                        rows.forEach(row => tbody.appendChild(row));
+                    });
+                });
             }
         });
 
@@ -609,68 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             alert(error.message);
             loadingOverlay.style.display = 'none';
-        }
-    });
-
-    // 정렬 함수
-    function sortTable(table, column, direction) {
-        const tbody = table.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-        
-        rows.sort((a, b) => {
-            let aValue = a.cells[column].textContent;
-            let bValue = b.cells[column].textContent;
-            
-            // 숫자로 변환 가능한 경우 숫자로 변환
-            if (!isNaN(aValue) && !isNaN(bValue)) {
-                aValue = parseFloat(aValue);
-                bValue = parseFloat(bValue);
-            }
-            
-            // 퍼센트 값 처리
-            if (column === 4) { // 사용률 컬럼
-                aValue = parseFloat(aValue);
-                bValue = parseFloat(bValue);
-            }
-            
-            if (direction === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
-        
-        // 정렬된 행을 테이블에 다시 추가
-        rows.forEach(row => tbody.appendChild(row));
-    }
-
-    // 정렬 이벤트 리스너 추가
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.sortable')) {
-            const th = e.target.closest('.sortable');
-            const table = th.closest('table');
-            const column = Array.from(th.parentElement.children).indexOf(th);
-            
-            // 현재 정렬 방향 확인
-            const isAsc = th.classList.contains('asc');
-            const isDesc = th.classList.contains('desc');
-            
-            // 모든 정렬 헤더에서 클래스 제거
-            table.querySelectorAll('.sortable').forEach(header => {
-                header.classList.remove('asc', 'desc');
-            });
-            
-            // 새로운 정렬 방향 설정
-            if (!isAsc && !isDesc) {
-                th.classList.add('asc');
-                sortTable(table, column, 'asc');
-            } else if (isAsc) {
-                th.classList.add('desc');
-                sortTable(table, column, 'desc');
-            } else {
-                th.classList.add('asc');
-                sortTable(table, column, 'asc');
-            }
         }
     });
 });
