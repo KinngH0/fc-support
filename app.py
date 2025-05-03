@@ -1,22 +1,21 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, send_file
+import os
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+app = Flask(__name__, static_folder='build', static_url_path='')
 
 @app.route('/')
 def serve():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/static/<path:path>')
-def serve_static(path):
-    return send_from_directory('static/static', path)
+@app.route('/favicon.ico')
+def favicon():
+    return send_file('favicon.ico')
 
 @app.route('/<path:path>')
-def serve_root(path):
-    if path == 'favicon.ico':
-        return send_from_directory('static', 'favicon.png')
-    if path.startswith('static/'):
-        return send_from_directory('static', path)
-    return send_from_directory('static', 'index.html')
+def serve_static(path):
+    if os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/healthz')
 def health_check():
