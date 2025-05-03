@@ -232,6 +232,7 @@
     100% { transform: rotate(360deg); }
 }
 
+/* 다크모드 스타일 */
 [data-theme="dark"] .team-color-list {
     background-color: #3d3d3d;
     border-color: #4d4d4d;
@@ -262,163 +263,6 @@
     border-top-color: #4eb655;
 }
 
-.position-table {
-    margin-bottom: 2rem;
-}
-
-.position-table th {
-    background-color: #f8f9fa;
-}
-
-.position-table table {
-    border-collapse: collapse;
-    width: 100%;
-    background-color: #ffffff;
-}
-
-.position-table th,
-.position-table td {
-    border: 1px solid #dee2e6;
-    padding: 8px;
-    text-align: left;
-}
-
-.position-table th:nth-child(1),
-.position-table td:nth-child(1) {
-    width: 60px;  /* 순위 */
-    text-align: center;  /* 중앙 정렬 */
-}
-
-.position-table th:nth-child(2),
-.position-table td:nth-child(2) {
-    width: 200px;  /* 선수명 */
-}
-
-.position-table th:nth-child(3),
-.position-table td:nth-child(3) {
-    width: 150px;  /* 시즌 */
-}
-
-.position-table th:nth-child(4),
-.position-table td:nth-child(4) {
-    width: 80px;  /* 강화 */
-}
-
-.position-table th:nth-child(5),
-.position-table td:nth-child(5) {
-    width: 150px;  /* 사용률 */
-}
-
-.position-table th:nth-child(6),
-.position-table td:nth-child(6) {
-    width: auto;  /* 사용자 - 남은 공간 자동 할당 */
-}
-
-/* 테이블 열 너비 통일 */
-.basic-info table th,
-.formation-info table th,
-.value-info table th {
-    width: 150px;
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.basic-info table td,
-.formation-info table td,
-.value-info table td {
-    width: calc(100% - 150px);
-}
-
-/* 포메이션 테이블 열 너비 조정 */
-.formation-info table th:nth-child(1) {
-    width: 150px;
-}
-.formation-info table th:nth-child(2) {
-    width: 200px;
-}
-.formation-info table th:nth-child(3) {
-    width: auto;
-}
-
-/* 테이블 디자인 통일 */
-.basic-info table,
-.formation-info table,
-.value-info table,
-.score-info table,
-.position-table table {
-    margin-bottom: 0;
-    border: 1px solid #dee2e6;
-    background-color: #ffffff;
-}
-
-.basic-info table th,
-.formation-info table th,
-.value-info table th,
-.score-info table th,
-.position-table th {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    border: 1px solid #dee2e6;
-    vertical-align: middle;
-}
-
-.basic-info table td,
-.formation-info table td,
-.value-info table td,
-.score-info table td,
-.position-table td {
-    padding: 12px 15px;
-    border: 1px solid #dee2e6;
-    vertical-align: middle;
-}
-
-/* 다크모드 스타일 */
-[data-theme="dark"] .basic-info table,
-[data-theme="dark"] .formation-info table,
-[data-theme="dark"] .value-info table,
-[data-theme="dark"] .score-info table,
-[data-theme="dark"] .position-table table {
-    background-color: #2d2d2d;
-    border-color: #4d4d4d;
-}
-
-[data-theme="dark"] .basic-info table th,
-[data-theme="dark"] .formation-info table th,
-[data-theme="dark"] .value-info table th,
-[data-theme="dark"] .score-info table th,
-[data-theme="dark"] .position-table th {
-    background-color: #3d3d3d;
-    color: #ffffff;
-    border-color: #4d4d4d;
-}
-
-[data-theme="dark"] .basic-info table td,
-[data-theme="dark"] .formation-info table td,
-[data-theme="dark"] .value-info table td,
-[data-theme="dark"] .score-info table td,
-[data-theme="dark"] .position-table td {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-color: #4d4d4d;
-}
-
-[data-theme="dark"] .basic-info table tr:hover td,
-[data-theme="dark"] .formation-info table tr:hover td,
-[data-theme="dark"] .value-info table tr:hover td,
-[data-theme="dark"] .score-info table tr:hover td,
-[data-theme="dark"] .position-table tr:hover td {
-    background-color: #3d3d3d;
-}
-
-[data-theme="dark"] .basic-info h5,
-[data-theme="dark"] .formation-info h5,
-[data-theme="dark"] .value-info h5,
-[data-theme="dark"] .score-info h5,
-[data-theme="dark"] .position-info h5,
-[data-theme="dark"] .position-table h6 {
-    color: #ffffff;
-}
-
 /* 섹션 간격 통일 */
 .basic-info,
 .formation-info,
@@ -433,72 +277,92 @@
     font-weight: 600;
 }
 
-/* 점수 정보 테이블 스타일 추가 */
-.score-info table th,
-.score-info table td {
-    width: 150px;
-    background-color: #f8f9fa;
-    font-weight: 600;
+/* 포지션별 테이블 스타일 */
+.position-table {
+    margin-bottom: 2rem;
 }
 
-.score-info table td {
+.position-table th:nth-child(1),
+.position-table td:nth-child(1) {
+    width: 60px;
+    text-align: center;
+}
+
+.position-table th:nth-child(2),
+.position-table td:nth-child(2) {
+    width: 200px;
+}
+
+.position-table th:nth-child(3),
+.position-table td:nth-child(3) {
+    width: 150px;
+}
+
+.position-table th:nth-child(4),
+.position-table td:nth-child(4) {
+    width: 80px;
+}
+
+.position-table th:nth-child(5),
+.position-table td:nth-child(5) {
+    width: 150px;
+}
+
+.position-table th:nth-child(6),
+.position-table td:nth-child(6) {
+    width: auto;
+}
+
+/* 기본 정보 테이블 열 너비 */
+.basic-info table th,
+.formation-info table th,
+.value-info table th {
+    width: 150px;
+}
+
+.basic-info table td,
+.formation-info table td,
+.value-info table td {
     width: calc(100% - 150px);
 }
 
-.score-info table {
-    margin-bottom: 0;
-    border: 1px solid #dee2e6;
+/* 포메이션 테이블 열 너비 */
+.formation-info table th:nth-child(1) {
+    width: 150px;
+}
+.formation-info table th:nth-child(2) {
+    width: 200px;
+}
+.formation-info table th:nth-child(3) {
+    width: auto;
 }
 
-.score-info h5 {
-    margin-bottom: 1rem;
-    font-weight: 600;
+/* 정렬 버튼 스타일 */
+.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
 }
 
-[data-theme="dark"] .position-table th {
-    background-color: #3d3d3d;
-    color: #ffffff;
-    border-color: #4d4d4d;
+.sortable i {
+    margin-left: 5px;
+    transition: transform 0.2s ease;
 }
 
-[data-theme="dark"] .position-table td {
-    color: #ffffff;
-    border-color: #4d4d4d;
-    background-color: #2d2d2d;
+.sortable.asc i {
+    transform: rotate(180deg);
 }
 
-[data-theme="dark"] .position-table h6 {
-    color: #ffffff;
+.sortable.desc i {
+    transform: rotate(0deg);
 }
 
-[data-theme="dark"] .position-table table {
-    background-color: #2d2d2d;
+.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="dark"] .position-table tbody tr:hover {
-    background-color: #3d3d3d;
-}
-
-[data-theme="dark"] .basic-info table th,
-[data-theme="dark"] .formation-info table th,
-[data-theme="dark"] .value-info table th,
-[data-theme="dark"] .score-info table th {
-    background-color: #3d3d3d;
-}
-
-[data-theme="dark"] .basic-info table td,
-[data-theme="dark"] .formation-info table td,
-[data-theme="dark"] .value-info table td,
-[data-theme="dark"] .score-info table td {
-    background-color: #2d2d2d;
-}
-
-[data-theme="dark"] .basic-info h5,
-[data-theme="dark"] .formation-info h5,
-[data-theme="dark"] .value-info h5,
-[data-theme="dark"] .score-info h5,
-[data-theme="dark"] .position-info h5 {
-    color: #ffffff;
+[data-theme="dark"] .sortable:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 </style>
 
@@ -636,11 +500,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>순위</th>
-                                    <th>선수명</th>
-                                    <th>시즌</th>
+                                    <th class="sortable" data-sort="rank">순위 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="name">선수명 <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-sort="season">시즌 <i class="fas fa-sort"></i></th>
                                     <th>강화</th>
-                                    <th>사용률</th>
+                                    <th class="sortable" data-sort="percent">사용률 <i class="fas fa-sort"></i></th>
                                     <th>사용자</th>
                                 </tr>
                             </thead>
@@ -745,6 +609,68 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             alert(error.message);
             loadingOverlay.style.display = 'none';
+        }
+    });
+
+    // 정렬 함수
+    function sortTable(table, column, direction) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            let aValue = a.cells[column].textContent;
+            let bValue = b.cells[column].textContent;
+            
+            // 숫자로 변환 가능한 경우 숫자로 변환
+            if (!isNaN(aValue) && !isNaN(bValue)) {
+                aValue = parseFloat(aValue);
+                bValue = parseFloat(bValue);
+            }
+            
+            // 퍼센트 값 처리
+            if (column === 4) { // 사용률 컬럼
+                aValue = parseFloat(aValue);
+                bValue = parseFloat(bValue);
+            }
+            
+            if (direction === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+        
+        // 정렬된 행을 테이블에 다시 추가
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // 정렬 이벤트 리스너 추가
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.sortable')) {
+            const th = e.target.closest('.sortable');
+            const table = th.closest('table');
+            const column = Array.from(th.parentElement.children).indexOf(th);
+            
+            // 현재 정렬 방향 확인
+            const isAsc = th.classList.contains('asc');
+            const isDesc = th.classList.contains('desc');
+            
+            // 모든 정렬 헤더에서 클래스 제거
+            table.querySelectorAll('.sortable').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // 새로운 정렬 방향 설정
+            if (!isAsc && !isDesc) {
+                th.classList.add('asc');
+                sortTable(table, column, 'asc');
+            } else if (isAsc) {
+                th.classList.add('desc');
+                sortTable(table, column, 'desc');
+            } else {
+                th.classList.add('asc');
+                sortTable(table, column, 'asc');
+            }
         }
     });
 });
