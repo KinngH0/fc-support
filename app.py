@@ -13,28 +13,16 @@ from datetime import datetime, timedelta
 import tempfile
 from functools import lru_cache
 import time
-from threading import Timer, Lock
+from threading import Timer
 from collections import OrderedDict
-import asyncio
-import aiohttp
-from typing import List, Tuple, Dict, Any
-import concurrent.futures
-from dotenv import load_dotenv
-
-# 환경변수 로드
-load_dotenv()
 
 app = Flask(__name__)
-API_KEY = os.environ.get('FC_API_KEY')
-
-if not API_KEY:
-    raise ValueError("FC_API_KEY 환경변수가 설정되지 않았습니다. Render.com의 환경변수 설정에서 FC_API_KEY를 추가해주세요.")
+API_KEY = os.getenv('FC_API_KEY')
 
 # 캐시 설정
 rank_cache = {}
 match_cache = {}
 cache_timer = None
-cache_lock = Lock()
 
 def get_next_hour():
     """다음 정각까지 남은 시간(초)을 반환"""
@@ -44,11 +32,10 @@ def get_next_hour():
 
 def clear_cache():
     """캐시 초기화"""
-    with cache_lock:
-        global rank_cache, match_cache
-        rank_cache = {}
-        match_cache = {}
-        print(f"캐시가 초기화되었습니다. - {datetime.now()}")
+    global rank_cache, match_cache
+    rank_cache = {}
+    match_cache = {}
+    print(f"캐시가 초기화되었습니다. - {datetime.now()}")
 
 def schedule_cache_clear():
     """다음 정각에 캐시를 초기화하도록 스케줄링"""
@@ -69,132 +56,27 @@ def schedule_cache_clear():
     cache_timer.start()
     print(f"다음 캐시 초기화 예정: {next_hour}")
 
-# 세션 풀 설정
-session_pool = None
-MAX_CONNECTIONS = 200
+def create_session():
+    session = requests.Session()
+    headers = {
+        'x-nxopen-api-key': API_KEY,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    session.headers.update(headers)
+    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[429, 500, 502, 503, 504])
+    adapter = HTTPAdapter(max_retries=retries, pool_connections=100, pool_maxsize=100)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
 
-def create_session_pool():
-    conn = aiohttp.TCPConnector(limit=MAX_CONNECTIONS, force_close=True)
-    timeout = aiohttp.ClientTimeout(total=10)
-    return aiohttp.ClientSession(
-        connector=conn,
-        timeout=timeout,
-        headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-    )
-
-def get_session_pool():
-    global session_pool
-    if session_pool is None:
-        session_pool = create_session_pool()
-    return session_pool
-
-async def fetch_page(session, page: int, normalized_filter: str) -> List[Tuple]:
-    cache_key = f"{page}_{normalized_filter}"
-    
-    with cache_lock:
-        if cache_key in rank_cache:
-            if datetime.now() < get_next_hour():
-                return rank_cache[cache_key]
-            del rank_cache[cache_key]
-
-    try:
-        url = f'https://fconline.nexon.com/datacenter/rank_inner?rt=manager&n4pageno={page}'
-        async with session.get(url) as response:
-            if response.status != 200:
-                return []
-            
-            html = await response.text()
-            soup = BeautifulSoup(html, 'html.parser')
-            results = []
-            rank = (page - 1) * 20 + 1
-
-            for tr in soup.select('.tbody .tr'):
-                try:
-                    name = tr.select_one('.rank_coach .name').text.strip()
-                    team = tr.select_one('.td.team_color .name .inner, .td.team_color .name').text.strip()
-                    team = re.sub(r'\(.*?\)', '', team).replace(" ", "").lower()
-                    
-                    if normalized_filter != "all" and normalized_filter not in team:
-                        rank += 1
-                        continue
-
-                    formation = tr.select_one('.td.formation').text.strip()
-                    value_tag = tr.select_one('span.price')
-                    value = 0
-                    if value_tag:
-                        raw = value_tag.get("alt") or value_tag.get("title") or "0"
-                        value = int(raw.replace(",", "")) // 100_000_000
-
-                    score = float(tr.select_one('.td.rank_r_win_point').text.strip())
-                    results.append((name, rank, formation, value, score))
-                    rank += 1
-                except:
-                    rank += 1
-                    continue
-
-            with cache_lock:
-                rank_cache[cache_key] = results
-            return results
-    except:
-        return []
-
-async def fetch_all_pages(pages: int, normalized_filter: str) -> List[Tuple]:
-    async with get_session_pool() as session:
-        tasks = [fetch_page(session, page, normalized_filter) for page in range(1, pages + 1)]
-        results = await asyncio.gather(*tasks)
-        return [item for sublist in results for item in sublist]
-
-def fetch_match_data(nickname: str) -> List[Dict]:
-    cache_key = nickname
-    
-    with cache_lock:
-        if cache_key in match_cache:
-            if datetime.now() < get_next_hour():
-                return match_cache[cache_key]
-            del match_cache[cache_key]
-
-    try:
-        with requests.Session() as session:
-            session.headers.update({'x-nxopen-api-key': API_KEY})
-            
-            ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
-            if ouid_res.status_code != 200:
-                return []
-            ouid = ouid_res.json().get("ouid")
-
-            match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", timeout=5)
-            if match_res.status_code != 200 or not match_res.json():
-                return []
-            match_id = match_res.json()[0]
-
-            detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
-            if detail_res.status_code != 200:
-                return []
-            
-            results = []
-            for info in detail_res.json()["matchInfo"]:
-                if info["ouid"] == ouid:
-                    for p in info.get("player", []):
-                        if p.get("spPosition") == 28:
-                            continue
-                        results.append({
-                            "nickname": nickname,
-                            "position": position_map.get(p["spPosition"], f"pos{p['spPosition']}"),
-                            "name": spid_map.get(p["spId"], f"(Unknown:{p['spId']})"),
-                            "season": season_map.get(int(str(p["spId"])[:3]), str(p["spId"])[:3]),
-                            "grade": p["spGrade"]
-                        })
-            
-            with cache_lock:
-                match_cache[cache_key] = results
-            return results
-    except:
-        return []
+def get_session():
+    global session
+    if not session:
+        session = create_session()
+    return session
 
 # 메타데이터 캐싱
-session = requests.Session()
+session = create_session()
 spid_data = None
 season_data = None
 position_data = None
@@ -243,6 +125,140 @@ def format_korean_currency(value):
     else:
         return f"{억:,}억"
 
+def get_cached_rank_data(page, normalized_filter):
+    """캐시된 랭킹 데이터 조회"""
+    cache_key = f"{page}_{normalized_filter}"
+    if cache_key in rank_cache:
+        data = rank_cache[cache_key]
+        if datetime.now() < get_next_hour():
+            return data
+        del rank_cache[cache_key]
+    return None
+
+def parse_rank_pages(start_page, end_page, normalized_filter):
+    session = get_session()
+    all_results = []
+    
+    for page in range(start_page, end_page + 1):
+        cached_data = get_cached_rank_data(page, normalized_filter)
+        if cached_data:
+            all_results.extend(cached_data)
+            continue
+
+        try:
+            url = f'https://fconline.nexon.com/datacenter/rank_inner?rt=manager&n4pageno={page}'
+            res = session.get(url, timeout=5)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            trs = soup.select('.tbody .tr')
+            page_results = []
+            rank = (page - 1) * 20 + 1
+            
+            for tr in trs:
+                try:
+                    name_tag = tr.select_one('.rank_coach .name')
+                    team_tag = tr.select_one('.td.team_color .name .inner') or tr.select_one('.td.team_color .name')
+                    formation_tag = tr.select_one('.td.formation')
+                    value_tag = tr.select_one('span.price')
+                    score_tag = tr.select_one('.td.rank_r_win_point')
+                    
+                    if not all([name_tag, team_tag]):
+                        rank += 1
+                        continue
+
+                    nickname = name_tag.text.strip()
+                    team_color = re.sub(r'\(.*?\)', '', team_tag.text.strip()).replace(" ", "").lower()
+                    formation = formation_tag.text.strip() if formation_tag else "-"
+                    
+                    value = 0
+                    if value_tag:
+                        raw = value_tag.get("alt") or value_tag.get("title") or "0"
+                        try:
+                            value = int(raw.replace(",", "")) // 100_000_000
+                        except:
+                            pass
+
+                    score = 0
+                    if score_tag:
+                        try:
+                            score = float(score_tag.text.strip())
+                        except:
+                            pass
+                            
+                    if normalized_filter == "all" or normalized_filter in team_color:
+                        page_results.append((nickname, rank, formation, value, score))
+                    rank += 1
+                except:
+                    rank += 1
+                    continue
+
+            # 페이지 결과 캐시 저장
+            if page_results:
+                rank_cache[f"{page}_{normalized_filter}"] = page_results
+                all_results.extend(page_results)
+
+        except Exception as e:
+            print(f"⚠️ 페이지 {page} 처리 오류: {e}")
+            continue
+            
+    return all_results
+
+def get_cached_match_data(nickname):
+    """캐시된 매치 데이터 조회"""
+    if nickname in match_cache:
+        data = match_cache[nickname]
+        if datetime.now() < get_next_hour():
+            return data
+        del match_cache[nickname]
+    return None
+
+def fetch_user_data(nickname):
+    cached_data = get_cached_match_data(nickname)
+    if cached_data:
+        return cached_data
+
+    try:
+        ouid_res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
+        if ouid_res.status_code != 200:
+            return []
+        ouid = ouid_res.json().get("ouid")
+
+        match_res = session.get(f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=1", timeout=5)
+        if match_res.status_code != 200 or not match_res.json():
+            return []
+        match_id = match_res.json()[0]
+
+        detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+        if detail_res.status_code != 200:
+            return []
+        match_data = detail_res.json()
+
+        results = []
+        for info in match_data["matchInfo"]:
+            if info["ouid"] == ouid:
+                for p in info.get("player", []):
+                    if p.get("spPosition") == 28:  # 감독
+                        continue
+                    sp_id = p["spId"]
+                    grade = p["spGrade"]
+                    position = position_map.get(p["spPosition"], f"pos{p['spPosition']}")
+                    season_id = int(str(sp_id)[:3])
+                    name = spid_map.get(sp_id, f"(Unknown:{sp_id})")
+                    season_name = season_map.get(season_id, f"{season_id}")
+                    results.append({
+                        "nickname": nickname,
+                        "position": position,
+                        "name": name,
+                        "season": season_name,
+                        "grade": grade,
+                    })
+
+        # 결과 캐시 저장
+        if results:
+            match_cache[nickname] = results
+        return results
+    except:
+        return []
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -271,33 +287,31 @@ def search():
     try:
         data = request.json
         rank_limit = int(data.get('rankRange', 1000))
-        team_color = data.get('teamColor', 'all').replace(" ", "").lower()
+        team_color = data.get('teamColor', 'all')
         top_n = int(data.get('topN', 5))
 
         if not spid_data:
             load_metadata()
 
-        # 비동기로 모든 페이지 데이터 수집
+        normalized_filter = team_color.replace(" ", "").lower()
+        
+        # 랭커 수집 - 한 번에 전체 페이지 처리
         pages = (rank_limit - 1) // 20 + 1
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        ranked_users = loop.run_until_complete(fetch_all_pages(pages, team_color))
-        loop.close()
-
+        ranked_users = parse_rank_pages(1, pages, normalized_filter)
+        
         # 랭킹 범위로 필터링
         ranked_users = [u for u in ranked_users if u[1] <= rank_limit][:rank_limit]
-        
+
         if not ranked_users:
             return jsonify({"error": "조건에 맞는 사용자가 없습니다."}), 404
 
-        # 매치 데이터 수집 (상위 100명만)
+        # 유저별 경기 데이터 수집 최적화 - 상위 100명만
         unique_users = len(ranked_users)
+        player_records = []
         sample_size = min(100, unique_users)
-        sampled_users = [u[0] for u in ranked_users[:sample_size]]
         
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            player_records = []
-            futures = {executor.submit(fetch_match_data, nickname): nickname for nickname in sampled_users}
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = [executor.submit(fetch_user_data, u[0]) for u in ranked_users[:sample_size]]
             for future in as_completed(futures):
                 try:
                     result = future.result()
@@ -311,11 +325,17 @@ def search():
             return jsonify({"error": "매치 데이터를 찾을 수 없습니다."}), 404
 
         # 기본 정보
-        top_user = min(ranked_users, key=lambda x: x[1])
-        
+        top_user, top_rank, _, _, _ = min(ranked_users, key=lambda x: x[1])
+
         # 포메이션 정보
+        formation_dict = {}
+        teams_value = []
+        for nickname, rank, formation, value, _ in ranked_users:
+            formation_dict.setdefault(formation, []).append(nickname)
+            teams_value.append(value)
+
         formations = {}
-        for formation, users in pd.DataFrame(ranked_users).groupby(2)[0].agg(list).items():
+        for formation, users in sorted(formation_dict.items(), key=lambda item: len(item[1]), reverse=True):
             percent = round(len(users) / unique_users * 100)
             preview = ", ".join(users[:3])
             if len(users) > 3:
@@ -326,33 +346,53 @@ def search():
                 "users": preview
             }
 
-        # 점수 정보
+        # 점수 정보 계산
         ranks = [r[1] for r in ranked_users]
         scores = [r[4] for r in ranked_users]
+        avg_rank = round(sum(ranks) / len(ranks))
+        avg_score = round(sum(scores) / len(scores))
+        min_rank = min(ranks)
+        max_rank = max(ranks)
+        min_score = round(min(scores))
+        max_score = round(max(scores))
+
         score_info = {
             "type": "table",
             "rows": [
-                {"label": "평균", "value": f"{round(sum(ranks) / len(ranks))}등 ({round(sum(scores) / len(scores))}점)"},
-                {"label": "최고", "value": f"{min(ranks)}등 ({round(max(scores))}점)"},
-                {"label": "최저", "value": f"{max(ranks)}등 ({round(min(scores))}점)"}
+                {"label": "평균", "value": f"{avg_rank}등 ({avg_score}점)"},
+                {"label": "최고", "value": f"{min_rank}등 ({max_score}점)"},
+                {"label": "최저", "value": f"{max_rank}등 ({min_score}점)"}
             ]
         }
 
         # 구단 가치 정보
-        values = [r[3] for r in ranked_users]
-        value_info = {
-            "type": "table",
-            "rows": [
-                {"label": "평균", "value": format_korean_currency(round(sum(values) / len(values)))},
-                {"label": "최고", "value": format_korean_currency(max(values))},
-                {"label": "최저", "value": format_korean_currency(min(values))}
-            ]
-        }
+        if teams_value:
+            avg_val = round(sum(teams_value) / len(teams_value))
+            min_val = min(teams_value)
+            max_val = max(teams_value)
+            value_info = {
+                "type": "table",
+                "rows": [
+                    {"label": "평균", "value": format_korean_currency(avg_val)},
+                    {"label": "최고", "value": format_korean_currency(max_val)},
+                    {"label": "최저", "value": format_korean_currency(min_val)}
+                ]
+            }
+        else:
+            value_info = {
+                "type": "table",
+                "rows": [
+                    {"label": "평균", "value": "0억"},
+                    {"label": "최고", "value": "0억"},
+                    {"label": "최저", "value": "0억"}
+                ]
+            }
 
         # 포지션별 선수 픽률
         positions = OrderedDict()
+        # 랭킹 범위가 1이면 해당 유저의 데이터만 사용
         if rank_limit == 1:
-            df = df[df["nickname"] == top_user[0]]
+            df = df[df["nickname"] == top_user]
 
         for group_name, pos_list in position_groups.items():
             group_df = df[df["position"].isin(pos_list)]
@@ -365,34 +405,35 @@ def search():
                 .reset_index()
                 .sort_values(by="count", ascending=False)
                 .head(top_n)
+                .reset_index(drop=True)
             )
 
             positions[group_name] = []
-            for _, row in top_players.iterrows():
-                percentage = round(row["count"] / unique_users * 100)
-                user_list = row["users"]
+            for i, row_data in top_players.iterrows():
+                percentage = round(row_data["count"] / unique_users * 100)
+                user_list = row_data["users"]
                 display_users = ", ".join(user_list[:3])
                 if len(user_list) > 3:
                     display_users += f" 외 {len(user_list) - 3}명"
 
                 positions[group_name].append({
-                    "rank": len(positions[group_name]) + 1,
-                    "name": row["name"],
-                    "season": row["season"],
-                    "grade": row["grade"],
+                    "rank": i + 1,
+                    "name": row_data["name"],
+                    "season": row_data["season"],
+                    "grade": row_data["grade"],
                     "percent": percentage,
-                    "count": row["count"],
+                    "count": row_data["count"],
                     "users": display_users
                 })
 
         return jsonify({
             "teamColor": team_color,
             "uniqueUsers": unique_users,
-            "topUser": top_user[0],
-            "topRank": top_user[1],
+            "topUser": top_user,
+            "topRank": top_rank,
             "formations": formations,
             "valueInfo": value_info,
-            "scoreInfo": score_info,
+            "scoreInfo": score_info,  # 점수 정보 추가
             "positions": positions
         })
 
@@ -428,11 +469,6 @@ def generate_excel():
 def download(filename):
     temp_dir = tempfile.gettempdir()
     return send_file(os.path.join(temp_dir, filename), as_attachment=True)
-
-# 앱 시작시 캐시 초기화 스케줄러 시작
-with app.app_context():
-    clear_cache()
-    schedule_cache_clear()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000, debug=True) 
