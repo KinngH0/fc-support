@@ -693,9 +693,12 @@ def check_and_reset_status():
             'last_update': last_update,
             'row_count': 0
         }
+        # status.json 파일이 있으면 삭제
+        if os.path.exists('status.json'):
+            os.remove('status.json')
         with open('status.json', 'w') as f:
             json.dump(status, f)
-        print(f"[{last_update}] 서버 재시작: 상태를 최근 정각 기준으로 초기화함")
+        print(f"[{last_update}] 서버 재시작: 상태를 최근 정각 기준으로 강제 초기화함")
     except Exception as e:
         print(f"[ERROR] 상태 초기화 중 오류 발생: {str(e)}")
     finally:
