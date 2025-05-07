@@ -31,9 +31,20 @@ API_KEY = os.getenv('FC_API_KEY')
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
-# 로그 파일 핸들러 설정
+class KSTFormatter(logging.Formatter):
+    converter = lambda *args: datetime.now(pytz.timezone('Asia/Seoul')).timetuple()
+    def formatTime(self, record, datefmt=None):
+        ct = self.converter()
+        if datefmt:
+            s = time.strftime(datefmt, ct)
+        else:
+            t = time.strftime("%Y-%m-%d %H:%M:%S", ct)
+            s = "%s" % t
+        return s
+
+# 로그 파일 핸들러 설정 (KST 적용)
 file_handler = RotatingFileHandler('logs/app.log', maxBytes=1024*1024, backupCount=5, encoding='utf-8')
-file_handler.setFormatter(logging.Formatter(
+file_handler.setFormatter(KSTFormatter(
     '%(asctime)s [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 ))
