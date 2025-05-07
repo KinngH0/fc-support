@@ -3,4 +3,8 @@ pandas==2.1.4
 openpyxl==3.1.2
 tqdm==4.66.1
 backoff==2.2.1
-gunicorn==21.2.0 
+gunicorn==21.2.0
+flask==3.0.2
+beautifulsoup4==4.12.3
+markupsafe==2.1.5
+xlsxwriter==3.1.9 
