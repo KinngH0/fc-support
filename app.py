@@ -1100,6 +1100,14 @@ def admin_log():
         app.logger.error(f"로그 파일 읽기 오류: {str(e)}")
         return f"로그 파일 읽기 오류: {str(e)}"
 
+def start_background_tasks():
+    if not hasattr(app, 'scheduler_started'):
+        app.scheduler_started = True
+        schedule_cache_clear()
+        threading.Thread(target=crawl_and_save_scheduler, daemon=True).start()
+
+start_background_tasks()
+
 if __name__ == '__main__':
     # 로컬 개발 환경에서는 디버그 모드로 실행
     app.run(debug=True, host='0.0.0.0', port=5000) 
