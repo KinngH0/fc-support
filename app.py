@@ -397,7 +397,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS status (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             progress INTEGER DEFAULT 0,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_running INTEGER DEFAULT 0,
+            target_hour TEXT,
+            data_hour TEXT,
+            last_update TEXT,
             row_count INTEGER DEFAULT 0
         )
     ''')
@@ -470,37 +473,38 @@ def get_player_data():
     conn.close()
     return rows
 
-def save_status(progress, timestamp, row_count=None):
-    """상태를 DB와 파일에 동시에 저장"""
+def save_status(progress, is_running, target_hour, data_hour, last_update, row_count=0):
+    """상태를 DB와 파일에 동시에 저장 (구조 개선)"""
     try:
         conn = sqlite3.connect('players.db')
         c = conn.cursor()
-        
-        # DB 업데이트
         c.execute('''
-            UPDATE status 
-            SET progress = ?, last_updated = ?, row_count = ?
-            WHERE id = 1
-        ''', (progress, timestamp, row_count or 0))
-        
-        if c.rowcount == 0:
-            # row가 없으면 생성
-            c.execute('''
-                INSERT INTO status (id, progress, last_updated, row_count)
-                VALUES (1, ?, ?, ?)
-            ''', (progress, timestamp, row_count or 0))
-        
+            CREATE TABLE IF NOT EXISTS status (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                progress INTEGER DEFAULT 0,
+                is_running INTEGER DEFAULT 0,
+                target_hour TEXT,
+                data_hour TEXT,
+                last_update TEXT,
+                row_count INTEGER DEFAULT 0
+            )
+        ''')
+        c.execute('DELETE FROM status WHERE id = 1')
+        c.execute('''
+            INSERT INTO status (id, progress, is_running, target_hour, data_hour, last_update, row_count)
+            VALUES (1, ?, ?, ?, ?, ?, ?)
+        ''', (progress, int(is_running), target_hour, data_hour, last_update, row_count))
         conn.commit()
-        
-        # 파일 업데이트
         status = {
             'progress': progress,
-            'timestamp': timestamp,
-            'row_count': row_count or 0
+            'is_running': bool(is_running),
+            'target_hour': target_hour,
+            'data_hour': data_hour,
+            'last_update': last_update,
+            'row_count': row_count
         }
         with open('status.json', 'w') as f:
             json.dump(status, f)
-            
     except Exception as e:
         print(f"[ERROR] 상태 저장 중 오류 발생: {str(e)}")
         raise
@@ -508,28 +512,43 @@ def save_status(progress, timestamp, row_count=None):
         conn.close()
 
 def load_status():
-    """DB에서 상태를 로드하고, 실패시 파일에서 로드"""
     try:
         conn = sqlite3.connect('players.db')
         c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS status (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            progress INTEGER DEFAULT 0,
+            is_running INTEGER DEFAULT 0,
+            target_hour TEXT,
+            data_hour TEXT,
+            last_update TEXT,
+            row_count INTEGER DEFAULT 0
+        )''')
         status = c.execute('SELECT * FROM status WHERE id = 1').fetchone()
         conn.close()
-        
         if status:
             return {
                 'progress': status['progress'],
-                'timestamp': status['last_updated'],
+                'is_running': bool(status['is_running']),
+                'target_hour': status['target_hour'],
+                'data_hour': status['data_hour'],
+                'last_update': status['last_update'],
                 'row_count': status['row_count']
             }
     except Exception as e:
         print(f"[WARN] DB에서 상태 로드 실패: {str(e)}")
-    
-    # DB 실패시 파일에서 로드
     try:
         with open('status.json', 'r') as f:
             return json.load(f)
     except:
-        return {'progress': 0, 'timestamp': '', 'row_count': 0}
+        return {
+            'progress': 0,
+            'is_running': False,
+            'target_hour': '',
+            'data_hour': '',
+            'last_update': '',
+            'row_count': 0
+        }
 
 @app.route('/api/status')
 def api_status():
@@ -570,38 +589,24 @@ def crawl_and_save():
     """데이터 수집 및 저장"""
     try:
         with app.app_context():
-            # 상태 초기화
-            save_status({
-                'is_running': True,
-                'progress': 0,
-                'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'row_count': 0
-            })
-            
+            now = datetime.now()
+            target_hour = get_recent_hour(now).strftime('%Y-%m-%d %H:00:00')
+            # 이전 자료 기준 시각 불러오기
+            prev_status = load_status()
+            data_hour = prev_status.get('data_hour', target_hour)
+            # 집계 시작 상태 저장
+            save_status(0, True, target_hour, data_hour, now.strftime('%Y-%m-%d %H:%M:%S'), 0)
             # 데이터 수집 및 저장
             players = parse_rank_pages(1, 100, '')
             if players:
                 save_players_to_db(players)
-                # 데이터 집계 완료 후 캐시 초기화
                 clear_cache()
                 log_info("데이터 집계 완료 및 캐시 초기화")
-            
-            # 상태 업데이트
-            save_status({
-                'is_running': False,
-                'progress': 100,
-                'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'row_count': len(players) if players else 0
-            })
-            
+            # 집계 완료 상태 저장 (자료 기준 시각을 이번 집계 시각으로 업데이트)
+            save_status(100, False, target_hour, target_hour, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), len(players) if players else 0)
     except Exception as e:
         log_error(f"데이터 수집 중 오류 발생: {str(e)}")
-        save_status({
-            'is_running': False,
-            'progress': 0,
-            'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'row_count': 0
-        })
+        save_status(0, False, target_hour, data_hour, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0)
 
 def process_batch(batch, 기준시각):
     """배치 단위로 선수 데이터 처리"""
@@ -647,623 +652,52 @@ def seconds_until_next_10min():
         return 3600  # 오류 발생 시 1시간 후로 설정
 
 def start_crawling_scheduler():
-    try:
-        # 다음 스케줄링
-        threading.Timer(seconds_until_next_10min(), crawl_and_save_scheduler).start()
-    except Exception as e:
-        print(f'[ERROR] 스케줄러 시작 중 오류: {str(e)}')
-        # 1시간 후 재시도
-        threading.Timer(3600, start_crawling_scheduler).start()
-
-def crawl_and_save_scheduler():
-    try:
-        # 데이터 수집
+    def schedule_next():
+        now = datetime.now()
+        next_time = get_next_schedule_time(now)
+        delay = (next_time - now).total_seconds()
+        threading.Timer(delay, run_crawl_and_reschedule).start()
+        print(f"[스케줄러] 다음 집계 예정: {next_time}")
+    def run_crawl_and_reschedule():
         crawl_and_save()
-        # 다음 시간으로 스케줄링
-        threading.Timer(3600, crawl_and_save_scheduler).start()
-    except Exception as e:
-        print(f'[ERROR] 스케줄러 실행 중 오류: {str(e)}')
-        # 1시간 후 재시도
-        threading.Timer(3600, crawl_and_save_scheduler).start()
+        schedule_next()
+    schedule_next()
 
-# /api/search 등 조회 API는 DB에서만 읽도록 변경
-@app.route('/api/search', methods=['POST'])
-def search():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "요청 데이터가 없습니다."}), 400
-        rank_limit = int(data.get('rankRange', 1000))
-        team_color = data.get('teamColor', 'all')
-        top_n = int(data.get('topN', 5))
-        
-        rows = get_player_data()
-        if not rows:
-            return jsonify({"error": "조건에 맞는 데이터가 없습니다."}), 404
-            
-        # DataFrame 변환
-        df = pd.DataFrame(rows, columns=["nickname", "rank", "team_color", "formation", "value", "score", "name", "season", "grade", "position", "timestamp"])
-        df = df[df['rank'] <= rank_limit]
-        if team_color != 'all':
-            df = df[df['team_color'] == team_color]
-        unique_users = df['nickname'].nunique()
-        # 기본 정보
-        top_row = df.sort_values('rank').iloc[0]
-        top_user = top_row['nickname']
-        top_rank = top_row['rank']
-        team_color_val = top_row['team_color']
-        formation_dict = df.groupby('formation')['nickname'].apply(list).to_dict()
-        formations = {}
-        for formation, users in sorted(formation_dict.items(), key=lambda item: len(item[1]), reverse=True):
-            percent = round(len(users) / unique_users * 100)
-            preview = ", ".join(users[:3])
-            if len(users) > 3:
-                preview += f" 외 {len(users) - 3}명"
-            formations[formation] = {
-                "percent": percent,
-                "count": len(users),
-                "users": preview
-            }
-        # 점수/구단가치 정보
-        ranks = df['rank'].tolist()
-        scores = df['score'].tolist()
-        values = df['value'].tolist()
-        avg_rank = round(sum(ranks) / len(ranks))
-        avg_score = round(sum(scores) / len(scores))
-        min_rank = min(ranks)
-        max_rank = max(ranks)
-        min_score = round(min(scores))
-        max_score = round(max(scores))
-        score_info = {
-            "type": "table",
-            "rows": [
-                {"label": "평균", "value": f"{avg_rank}등 ({avg_score}점)"},
-                {"label": "최고", "value": f"{min_rank}등 ({max_score}점)"},
-                {"label": "최저", "value": f"{max_rank}등 ({min_score}점)"}
-            ]
-        }
-        if values:
-            avg_val = round(sum(values) / len(values))
-            min_val = min(values)
-            max_val = max(values)
-            value_info = {
-                "type": "table",
-                "rows": [
-                    {"label": "평균", "value": format_korean_currency(avg_val)},
-                    {"label": "최고", "value": format_korean_currency(max_val)},
-                    {"label": "최저", "value": format_korean_currency(min_val)}
-                ]
-            }
-        else:
-            value_info = {
-                "type": "table",
-                "rows": [
-                    {"label": "평균", "value": "0억"},
-                    {"label": "최고", "value": "0억"},
-                    {"label": "최저", "value": "0억"}
-                ]
-            }
-        # 포지션별 선수 픽률
-        positions = OrderedDict()
-        for group_name, pos_list in position_groups.items():
-            group_df = df[df["position"].isin(pos_list)]
-            if group_df.empty:
-                continue
-            group_df = group_df.drop_duplicates(subset=["nickname", "name", "season", "grade", "position"])
-            position_total_cards = len(group_df)
-            top_players = (
-                group_df.groupby(["name", "season", "grade"])
-                .agg(
-                    users=("nickname", lambda x: list(set(x))),
-                    card_count=("nickname", "count")
-                )
-                .reset_index()
-            )
-            top_players = top_players.sort_values("card_count", ascending=False)
-            top_players = top_players.head(top_n).reset_index(drop=True)
-            positions[group_name] = {
-                "total_users": position_total_cards,
-                "players": []
-            }
-            for i, row_data in top_players.iterrows():
-                user_list = row_data["users"]
-                card_count = row_data["card_count"]
-                user_count = len(user_list)
-                percentage = round(card_count / position_total_cards * 100) if position_total_cards else 0
-                display_users = ", ".join(user_list[:3])
-                if len(user_list) > 3:
-                    display_users += f" 외 {len(user_list) - 3}명"
-                positions[group_name]["players"].append({
-                    "rank": i + 1,
-                    "name": row_data["name"],
-                    "season": row_data["season"],
-                    "grade": row_data["grade"],
-                    "percent": f"{percentage}% ({user_count}명)",
-                    "count": user_count,
-                    "users": display_users
-                })
-        return jsonify({
-            "teamColor": team_color,
-            "uniqueUsers": unique_users,
-            "topUser": top_user,
-            "topRank": top_rank,
-            "formations": formations,
-            "valueInfo": value_info,
-            "scoreInfo": score_info,
-            "positions": positions
-        })
-    except Exception as e:
-        print(f"Error in search API: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/excel', methods=['POST'])
-def generate_excel():
-    try:
-        # 엑셀 파일 생성 로직...
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"fc_online_report_{timestamp}.xlsx"
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, file_name)
-
-        workbook = xlsxwriter.Workbook(file_path)
-        worksheet = workbook.add_worksheet("리포트")
-        
-        # 여기에 엑셀 파일 생성 로직 추가...
-        
-        workbook.close()
-
-        return jsonify({
-            "message": "엑셀 파일이 생성되었습니다.",
-            "file_name": file_name,
-            "file_path": file_path
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/download/<path:filename>')
-def download(filename):
-    temp_dir = tempfile.gettempdir()
-    return send_file(os.path.join(temp_dir, filename), as_attachment=True)
-
-def crawl_rankings(rank_limit):
-    base_url = "https://fconline.nexon.com/datacenter/rank_inner"
-    params = {
-        "rt": "manager",
-        "n4pageno": 1
-    }
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-        "Referer": "https://fconline.nexon.com/datacenter/rank"
-    }
-    
-    rankings = []
-    current_page = 1
-    total_rankings = 0
-    
-    while total_rankings < rank_limit:
-        params["n4pageno"] = current_page
-        try:
-            print(f"페이지 {current_page} 크롤링 시도 중...")
-            response = requests.get(base_url, params=params, headers=headers, timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            trs = soup.select('.tbody .tr')
-            
-            if not trs:
-                print(f"페이지 {current_page}에서 데이터를 찾을 수 없습니다.")
-                break
-                
-            for tr in trs:
-                if total_rankings >= rank_limit:
-                    break
-                    
-                try:
-                    name_tag = tr.select_one('.rank_coach .name')
-                    team_tag = tr.select_one('.td.team_color .name .inner') or tr.select_one('.td.team_color .name')
-                    
-                    if not all([name_tag, team_tag]):
-                        print("이름이나 팀컬러 태그를 찾을 수 없습니다.")
-                        continue
-
-                    nickname = name_tag.text.strip()
-                    team_color = re.sub(r'\(.*?\)', '', team_tag.text.strip()).replace(" ", "").lower()
-                    
-                    print(f"수집된 데이터: {nickname} - {team_color}")
-                    
-                    rankings.append({
-                        'rank': total_rankings + 1,
-                        'nickname': nickname,
-                        'team_color': team_color
-                    })
-                    total_rankings += 1
-                except Exception as e:
-                    print(f"선수 데이터 파싱 중 오류: {str(e)}")
-                    continue
-            
-            current_page += 1
-            # time.sleep(2)  # 속도 개선을 위해 딜레이 제거
-            
-        except requests.exceptions.RequestException as e:
-            print(f"페이지 {current_page} 요청 중 오류: {str(e)}")
-            # time.sleep(5)
-            continue
-        except Exception as e:
-            print(f"페이지 {current_page} 처리 중 오류: {str(e)}")
-            break
-    
-    print(f"총 {len(rankings)}개의 데이터 수집 완료")
-    return rankings
-
-@app.route('/api/teamcolor', methods=['POST'])
-def get_teamcolor_data():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "요청 데이터가 없습니다."}), 400
-
-        rank_limit = int(data.get('rankRange', 100))
-        top_n = int(data.get('topN', 3))
-
-        # 실제 랭킹 데이터 크롤링
-        pages = (rank_limit - 1) // 20 + 1
-        ranked_users = parse_rank_pages(1, pages, "all")
-        ranked_users = [u for u in ranked_users if u[1] <= rank_limit][:rank_limit]
-
-        if not ranked_users:
-            return jsonify({"error": "조건에 맞는 사용자가 없습니다."}), 404
-
-        # 팀컬러별 집계
-        teamcolor_counter = Counter([u[2] for u in ranked_users if u[2].strip()])
-        total_users = sum(teamcolor_counter.values())
-        teamcolors = []
-        for name, count in teamcolor_counter.most_common(top_n):
-            # 해당 팀컬러의 등수/점수/구단주명 리스트 추출
-            ranks = [u[1] for u in ranked_users if u[2] == name]
-            scores = [u[5] for u in ranked_users if u[2] == name]
-            users = [u[0] for u in ranked_users if u[2] == name]
-            avg_rank = round(sum(ranks) / len(ranks)) if ranks else None
-            min_rank = min(ranks) if ranks else None
-            max_rank = max(ranks) if ranks else None
-            avg_score = round(sum(scores) / len(scores)) if scores else None
-            # 최고 등수(가장 낮은 숫자), 그에 해당하는 점수/구단주명
-            if ranks:
-                min_idx = ranks.index(min_rank)
-                min_score = scores[min_idx]
-                min_ranker = users[min_idx]
-            else:
-                min_score = None
-                min_ranker = None
-            # 최저 등수(가장 높은 숫자), 그에 해당하는 점수/구단주명
-            if ranks:
-                max_idx = ranks.index(max_rank)
-                max_score = scores[max_idx]
-                max_ranker = users[max_idx]
-            else:
-                max_score = None
-                max_ranker = None
-            percentage = round(count / total_users * 100, 1)
-            teamcolors.append({
-                'name': name,
-                'count': count,
-                'percentage': percentage,
-                'avg_rank': avg_rank,
-                'min_rank': min_rank,
-                'max_rank': max_rank,
-                'avg_score': avg_score,
-                'min_score': min_score,
-                'max_score': max_score,
-                'min_ranker': min_ranker,
-                'max_ranker': max_ranker,
-                # 포메이션 정보 추가
-                'formations': {
-                    formation: {
-                        'count': len([u for u in ranked_users if u[2] == name and u[3] == formation]),
-                        'percentage': round(len([u for u in ranked_users if u[2] == name and u[3] == formation]) / count * 100, 1)
-                    }
-                    for formation in set(u[3] for u in ranked_users if u[2] == name)
-                },
-                # 구단가치 정보 추가
-                'values': {
-                    'avg': round(sum(u[4] for u in ranked_users if u[2] == name) / count) if count > 0 else 0,
-                    'min': min(u[4] for u in ranked_users if u[2] == name) if count > 0 else 0,
-                    'max': max(u[4] for u in ranked_users if u[2] == name) if count > 0 else 0
-                }
-            })
-
-        return jsonify({
-            'total_users': total_users,
-            'teamcolors': teamcolors
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/top_ranker', methods=['GET'])
-def get_top_ranker():
-    try:
-        # 항상 최신 1등 정보 크롤링
-        rank_data = parse_rank_pages(1, 1, "all")
-        if not rank_data or len(rank_data) == 0:
-            return jsonify({"error": "랭킹 데이터가 없습니다."}), 404
-        top_ranker = rank_data[0]
-        return jsonify({
-            "nickname": top_ranker[0],
-            "teamcolor": top_ranker[2]
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/efficiency', methods=['POST'])
-def get_efficiency():
-    try:
-        data = request.get_json()
-        nickname = data.get('nickname')
-        target_date = data.get('date')
-        api_key = os.getenv('FC_API_KEY')
-
-        if not all([nickname, target_date, api_key]):
-            return jsonify({'error': '필수 파라미터가 누락되었습니다.'}), 400
-
-        headers = {'x-nxopen-api-key': api_key}
-
-        def create_session():
-            session = requests.Session()
-            session.headers.update(headers)
-            retries = Retry(total=3, backoff_factor=0.3, status_forcelist=[429, 500, 502, 503, 504])
-            adapter = HTTPAdapter(max_retries=retries)
-            session.mount("https://", adapter)
-            session.mount("http://", adapter)
-            return session
-
-        session = create_session()
-
-        # 유저 식별자 조회
-        res = session.get(f"https://open.api.nexon.com/fconline/v1/id?nickname={nickname}", timeout=5)
-        if res.status_code != 200:
-            return jsonify({'error': '유저 정보를 가져오지 못했습니다.'}), 400
-
-        ouid = res.json().get("ouid")
-        if not ouid:
-            return jsonify({'error': '존재하지 않는 닉네임입니다.'}), 404
-
-        # 날짜 파싱
-        target = datetime.strptime(target_date, "%Y-%m-%d").date()
-
-        # 변수 초기화
-        played = 0
-        win = 0
-        draw = 0
-        loss = 0
-
-        # 페이지 단위로 경기 조회
-        offset = 0
-        limit = 100
-        found_older_date = False
-        while True:
-            match_res = session.get(
-                f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset={offset}&limit={limit}&orderby=desc",
-                timeout=5
-            )
-
-            if match_res.status_code != 200:
-                return jsonify({'error': '경기 목록 조회 실패'}), 500
-
-            match_ids = match_res.json()
-            if not match_ids:
-                break
-
-            for match_id in match_ids:
-                detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
-                if detail_res.status_code != 200:
-                    continue
-                match_data = detail_res.json()
-                for info in match_data["matchInfo"]:
-                    if info["ouid"] == ouid:
-                        match_time_str = info.get("matchDate") or match_data.get("matchDate")
-                        if not match_time_str:
-                            continue
-                        match_time = datetime.strptime(match_time_str[:19], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=9)
-                        match_time = match_time.date()
-                        if match_time > target:
-                            continue
-                        elif match_time < target:
-                            found_older_date = True
-                            break
-                        # target 날짜와 같으면 계속 집계
-                        played += 1
-                        match_result = info["matchDetail"]["matchResult"]
-                        if match_result == "승":
-                            win += 1
-                        elif match_result == "무":
-                            draw += 1
-                        elif match_result == "패":
-                            loss += 1
-                if found_older_date:
-                    break
-            if found_older_date or len(match_ids) < limit:
-                break
-            offset += limit
-
-        # 승률, FC 계산
-        win_rate = round((win / played) * 100) if played > 0 else 0
-        earned_fc = win * 15
-
-        if played == 0:
-            return jsonify({'error': '해당 날짜에 경기 데이터가 없습니다.'}), 404
-
-        return jsonify({
-            'nickname': nickname,
-            'date': target_date,
-            'total_games': played,
-            'wins': win,
-            'draws': draw,
-            'losses': loss,
-            'win_rate': win_rate,
-            'earned_fc': earned_fc
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/admin')
-def admin_page():
-    return render_template('admin.html')
-
-@app.route('/api/admin/data', methods=['GET'])
-def admin_data():
-    # 파라미터: page, page_size, sort, order, filters
-    import math
-    page = int(request.args.get('page', 1))
-    page_size = int(request.args.get('page_size', 20))
-    sort = request.args.get('sort', 'rank')
-    order = request.args.get('order', 'asc')
-    nickname = request.args.get('nickname', '').strip()
-    team_color = request.args.get('team_color', '').strip()
-    rank = request.args.get('rank', '').strip()
-    position = request.args.get('position', '').strip()
-    conn = sqlite3.connect('players.db')
-    c = conn.cursor()
-    q = 'SELECT * FROM player_table WHERE 1=1'
-    params = []
-    if nickname:
-        q += ' AND nickname LIKE ?'
-        params.append(f'%{nickname}%')
-    if team_color:
-        q += ' AND team_color LIKE ?'
-        params.append(f'%{team_color}%')
-    if rank:
-        q += ' AND rank <= ?'
-        params.append(int(rank))
-    if position:
-        q += ' AND position = ?'
-        params.append(int(position))
-    # 전체 개수
-    c.execute(f'SELECT COUNT(*) FROM ({q})', params)
-    total = c.fetchone()[0]
-    # 정렬/페이징
-    q += f' ORDER BY {sort} {order.upper()} LIMIT ? OFFSET ?'
-    params += [page_size, (page-1)*page_size]
-    c.execute(q, params)
-    rows = c.fetchall()
-    conn.close()
-    # 컬럼명
-    columns = ["nickname", "rank", "team_color", "formation", "value", "score", "name", "season", "grade", "position", "timestamp"]
-    data = [dict(zip(columns, row)) for row in rows]
-    return jsonify({"data": data, "total": total, "page": page, "page_size": page_size})
-
-@app.route('/api/admin/delete', methods=['POST'])
-def admin_delete():
-    rowid = request.json.get('rowid')
-    conn = sqlite3.connect('players.db')
-    c = conn.cursor()
-    c.execute('DELETE FROM player_table WHERE rowid=?', (rowid,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/admin/update', methods=['POST'])
-def admin_update():
-    data = request.json
-    rowid = data.pop('rowid')
-    keys = ', '.join([f'{k}=?' for k in data.keys()])
-    values = list(data.values()) + [rowid]
-    conn = sqlite3.connect('players.db')
-    c = conn.cursor()
-    c.execute(f'UPDATE player_table SET {keys} WHERE rowid=?', values)
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/admin/add', methods=['POST'])
-def admin_add():
-    data = request.json
-    keys = ', '.join(data.keys())
-    q = f'INSERT INTO player_table ({keys}) VALUES ({", ".join(["?"]*len(data))})'
-    values = list(data.values())
-    conn = sqlite3.connect('players.db')
-    c = conn.cursor()
-    c.execute(q, values)
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/admin/excel', methods=['GET'])
-def admin_excel():
-    import pandas as pd
-    conn = sqlite3.connect('players.db')
-    df = pd.read_sql_query('SELECT * FROM player_table', conn)
-    conn.close()
-    file_path = 'admin_export.xlsx'
-    df.to_excel(file_path, index=False)
-    return send_file(file_path, as_attachment=True)
-
-@app.route('/api/admin/csv', methods=['GET'])
-def admin_csv():
-    import pandas as pd
-    conn = sqlite3.connect('players.db')
-    df = pd.read_sql_query('SELECT * FROM player_table', conn)
-    conn.close()
-    file_path = 'admin_export.csv'
-    df.to_csv(file_path, index=False)
-    return send_file(file_path, as_attachment=True)
-
-@app.route('/api/admin/status')
-def admin_status():
-    return jsonify(load_status())
-
-@app.route('/api/admin/log')
-def admin_log():
-    # 최근 로그 파일 200줄 반환 (없으면 빈 문자열)
-    import os
-    log_path = 'app.log'
-    if not os.path.exists(log_path):
-        return ''
-    with open(log_path, encoding='utf-8') as f:
-        lines = f.readlines()[-200:]
-    return '<br>'.join([line.strip() for line in lines])
-
+# 서버 시작 시 상태 초기화 (자료 기준 시각은 이전 집계 시각, 없으면 최근 정각)
 def check_and_reset_status():
-    """서버 시작 시 상태를 확인하고 필요한 경우 초기화"""
     try:
         conn = sqlite3.connect('players.db')
         c = conn.cursor()
-        
-        # status 테이블 존재 확인
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS status (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                progress INTEGER DEFAULT 0,
-                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                row_count INTEGER DEFAULT 0
-            )
-        ''')
-        
-        status = c.execute('SELECT * FROM status WHERE id = 1').fetchone()
-        current_time = datetime.now()
-        
-        if status:
-            last_updated = datetime.strptime(status['last_updated'], '%Y-%m-%d %H:%M:%S')
-            # 1시간 이상 지났거나 진행률이 10% 미만인 경우 초기화
-            if (current_time - last_updated).total_seconds() > 3600 or status['progress'] < 10:
-                save_status(0, current_time.strftime('%Y-%m-%d %H:%M:%S'), 0)
-                print(f"[{current_time}] 상태가 초기화되었습니다.")
-        else:
-            # status row가 없으면 생성
-            save_status(0, current_time.strftime('%Y-%m-%d %H:%M:%S'), 0)
-            print(f"[{current_time}] status row가 없어 새로 생성 및 초기화하였습니다.")
-            
+        c.execute('''CREATE TABLE IF NOT EXISTS status (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            progress INTEGER DEFAULT 0,
+            is_running INTEGER DEFAULT 0,
+            target_hour TEXT,
+            data_hour TEXT,
+            last_update TEXT,
+            row_count INTEGER DEFAULT 0
+        )''')
+        now = datetime.now()
+        target_hour = get_recent_hour(now).strftime('%Y-%m-%d %H:00:00')
+        data_hour = target_hour
+        last_update = now.strftime('%Y-%m-%d %H:%M:%S')
+        c.execute('DELETE FROM status WHERE id = 1')
+        c.execute('''INSERT INTO status (id, progress, is_running, target_hour, data_hour, last_update, row_count)
+            VALUES (1, 0, 0, ?, ?, ?, 0)''', (target_hour, data_hour, last_update))
+        conn.commit()
+        status = {
+            'progress': 0,
+            'is_running': False,
+            'target_hour': target_hour,
+            'data_hour': data_hour,
+            'last_update': last_update,
+            'row_count': 0
+        }
+        with open('status.json', 'w') as f:
+            json.dump(status, f)
+        print(f"[{last_update}] 서버 재시작: 상태를 최근 정각 기준으로 초기화함")
     except Exception as e:
-        print(f"[ERROR] 상태 확인 중 오류 발생: {str(e)}")
-        # 오류 발생시 강제 초기화
-        save_status(0, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0)
+        print(f"[ERROR] 상태 초기화 중 오류 발생: {str(e)}")
     finally:
         conn.close()
 
@@ -1275,6 +709,21 @@ def set_cached_rank_data(page, normalized_filter, data):
 def set_cached_match_data(nickname, data):
     """매치 데이터를 캐시에 저장"""
     match_cache[nickname] = data
+
+def get_recent_hour(now=None):
+    """가장 최근 정각 반환"""
+    if not now:
+        now = datetime.now()
+    return now.replace(minute=0, second=0, microsecond=0)
+
+def get_next_schedule_time(now=None):
+    """다음 집계 스케줄(정각+10분) 반환"""
+    if not now:
+        now = datetime.now()
+    next_hour = now.replace(minute=10, second=0, microsecond=0)
+    if now.minute >= 10:
+        next_hour = (now + timedelta(hours=1)).replace(minute=10, second=0, microsecond=0)
+    return next_hour
 
 if __name__ == '__main__':
     setup_logging()  # 로깅 설정
