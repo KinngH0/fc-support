@@ -21,6 +21,8 @@ import threading
 import json
 import logging
 from logging.handlers import RotatingFileHandler
+import pytz
+from pytz import timezone, utc
 
 app = Flask(__name__)
 API_KEY = os.getenv('FC_API_KEY')
@@ -44,7 +46,7 @@ match_cache = {}
 cache_timer = None
 
 # 전역 ThreadPoolExecutor 생성
-executor = ThreadPoolExecutor(max_workers=400)
+executor = ThreadPoolExecutor(max_workers=800)
 
 # 종료 시 executor 정리
 @atexit.register
@@ -264,6 +266,11 @@ def get_cached_match_data(nickname):
         del match_cache[nickname]
     return None
 
+def to_kst(dt):
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=utc)
+    return dt.astimezone(timezone('Asia/Seoul'))
+
 def fetch_user_data(nickname, max_retries=5):
     for attempt in range(max_retries):
         try:
@@ -277,7 +284,7 @@ def fetch_user_data(nickname, max_retries=5):
             ouid = ouid_res.json().get("ouid")
             if not ouid:
                 return []
-            target = datetime.now().date()
+            target = to_kst(datetime.utcnow()).date()
             offset = 0
             limit = 100
             found_older_date = False
@@ -294,6 +301,9 @@ def fetch_user_data(nickname, max_retries=5):
                     break
                 for match_id in match_ids:
                     detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+                    if detail_res.status_code == 429:
+                        time.sleep(1)
+                        continue
                     if detail_res.status_code != 200:
                         continue
                     match_data = detail_res.json()
@@ -310,7 +320,6 @@ def fetch_user_data(nickname, max_retries=5):
                             elif match_time < target:
                                 found_older_date = True
                                 break
-                            # 선수 카드 정보 파싱 (포지션을 숫자 코드로 저장)
                             for player in info.get("player", []):
                                 found_player = True
                                 pos_num = player.get("spPosition")
@@ -326,7 +335,7 @@ def fetch_user_data(nickname, max_retries=5):
                 if found_older_date or len(match_ids) < limit:
                     break
                 offset += limit
-                time.sleep(0.01)  # API rate limit 방지용 딜레이 (속도 개선)
+                time.sleep(0.001)  # 딜레이 최소화
             if not player_cards:
                 player_cards.append({
                     "nickname": nickname,
@@ -340,9 +349,9 @@ def fetch_user_data(nickname, max_retries=5):
             return player_cards
         except Exception as e:
             if attempt < max_retries - 1:
-                time.sleep(0.5)  # 재시도 전 대기
+                time.sleep(0.5 * (attempt + 1))  # backoff
                 continue
-            print(f"[ERROR] {nickname} 데이터 수집 실패: {e}")
+            app.logger.error(f"[ERROR] {nickname} 데이터 수집 실패: {e}")
             return []
 
 @app.route('/')
@@ -440,7 +449,7 @@ def api_status():
     return jsonify(load_status())
 
 def crawl_and_save():
-    print('[DB 갱신 시작]')
+    app.logger.info('[DB 갱신 시작]')
     if not spid_data:
         load_metadata()
     rank_limit = 10000
@@ -450,13 +459,14 @@ def crawl_and_save():
     ranked_users = [u for u in ranked_users if u[1] <= rank_limit][:rank_limit]
     all_players = []
     sample_size = len(ranked_users)
-    batch_size = 20  # 더 작은 배치로 실시간성 향상
-    from datetime import datetime
-    now = datetime.now()
-    기준시각 = now.replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+    batch_size = 100  # 속도 개선
+    now_utc = datetime.utcnow().replace(tzinfo=utc)
+    now_kst = to_kst(now_utc)
+    기준시각 = now_kst.replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
     total_batches = (sample_size + batch_size - 1) // batch_size
     processed_batches = 0
     save_status(0, 기준시각, 0)
+    start_time = time.time()
     for i in range(0, sample_size, batch_size):
         batch = ranked_users[i:i+batch_size]
         batch_futures = [executor.submit(fetch_user_data, u[0]) for u in batch]
@@ -481,10 +491,12 @@ def crawl_and_save():
                                 기준시각
                             ))
             except Exception as e:
-                print(f'[DB 갱신 중 예외] {e}')
+                app.logger.error(f'[DB 갱신 중 예외] {e}')
                 continue
         processed_batches += 1
         progress = int(processed_batches / total_batches * 100)
+        elapsed = time.time() - start_time
+        app.logger.info(f'진행률: {progress}% | {processed_batches}/{total_batches}배치 | 경과: {elapsed:.1f}s')
         # 집계 중에도 DB row 수를 status에 기록
         conn = sqlite3.connect('players.db')
         c = conn.cursor()
@@ -493,13 +505,15 @@ def crawl_and_save():
         conn.close()
         save_status(progress, 기준시각, row_count)
     save_players_to_db(all_players)
-    print(f'[DB 갱신 완료] 총 {len(all_players)}개 선수 데이터 저장')
+    app.logger.info(f'[DB 갱신 완료] 총 {len(all_players)}개 선수 데이터 저장')
     conn = sqlite3.connect('players.db')
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM player_table')
     row_count = c.fetchone()[0]
     conn.close()
     save_status(100, 기준시각, row_count)
+    total_time = time.time() - start_time
+    app.logger.info(f'[DB 갱신 종료] 소요 시간: {total_time:.1f}초')
 
 def seconds_until_next_10min():
     now = datetime.now()
