@@ -3,12 +3,10 @@ services:
     name: fc-support
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --workers 4 --worker-class sync --timeout 120 --keepalive 5
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: FC_API_KEY
-        sync: false
-    healthCheckPath: /healthz
-    autoDeploy: true
-    plan: free 
+      - key: FLASK_ENV
+        value: production
+    plan: standard 
