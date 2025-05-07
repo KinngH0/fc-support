@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: fc-support
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FC_API_KEY
+        sync: false
+    healthCheckPath: /healthz
+    autoDeploy: true
+    plan: free 

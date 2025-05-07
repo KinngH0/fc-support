@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid mt-4">
+  <h2 class="mb-4">관리자 대시보드</h2>
+  <div class="card mb-3">
+    <div class="card-body">
+      <form id="admin-search-form" class="row g-2 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label">닉네임</label>
+          <input type="text" class="form-control" id="search-nickname" placeholder="닉네임">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">팀컬러</label>
+          <input type="text" class="form-control" id="search-teamcolor" placeholder="팀컬러">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">랭킹(이하)</label>
+          <input type="number" class="form-control" id="search-rank" placeholder="랭킹" min="1">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">포지션</label>
+          <input type="text" class="form-control" id="search-position" placeholder="포지션">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-success w-100" id="search-btn">검색</button>
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-outline-secondary w-100" id="reset-btn">초기화</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="mb-2 d-flex justify-content-between align-items-center">
+    <div>
+      <button class="btn btn-primary btn-sm" id="download-excel">엑셀 다운로드</button>
+      <button class="btn btn-secondary btn-sm" id="download-csv">CSV 다운로드</button>
+    </div>
+    <div id="admin-status" class="text-muted small"></div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle" id="admin-table">
+      <thead class="table-light">
+        <tr>
+          <th data-sort="nickname">닉네임</th>
+          <th data-sort="rank">랭킹</th>
+          <th data-sort="team_color">팀컬러</th>
+          <th data-sort="formation">포메이션</th>
+          <th data-sort="value">구단가치</th>
+          <th data-sort="score">점수</th>
+          <th data-sort="name">선수명</th>
+          <th data-sort="season">시즌</th>
+          <th data-sort="grade">강화</th>
+          <th data-sort="position">포지션</th>
+          <th data-sort="timestamp">기준시각</th>
+          <th>수정/삭제</th>
+        </tr>
+      </thead>
+      <tbody id="admin-table-body">
+        <!-- 데이터 동적 렌더링 -->
+      </tbody>
+    </table>
+  </div>
+  <nav>
+    <ul class="pagination justify-content-center" id="admin-pagination">
+      <!-- 페이지네이션 동적 렌더링 -->
+    </ul>
+  </nav>
+  <div class="mt-4">
+    <h5>집계 현황/진행률</h5>
+    <div id="admin-crawl-status" class="mb-2"></div>
+    <h5>최근 로그</h5>
+    <pre id="admin-log" style="background:#222; color:#eee; padding:12px; border-radius:8px; max-height:200px; overflow:auto;"></pre>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// 관리자 페이지 JS: 데이터 조회, 검색, 정렬, 페이징, 다운로드, 수정/삭제, 집계현황/로그
+// 실제 데이터 연동은 /api/admin 등 별도 API에서 처리 예정
+
+function getHourText(dtStr) {
+  if (!dtStr) return '-';
+  const dt = new Date(dtStr.replace(' ', 'T'));
+  const h = dt.getHours().toString().padStart(2, '0');
+  return `${h}시`;
+}
+function fetchCrawlStatus() {
+  axios.get('/api/admin/status').then(res => {
+    const data = res.data;
+    const progress = data.progress || 0;
+    const hourText = getHourText(data.timestamp);
+    const rowCount = data.row_count || 0;
+    let msg = '';
+    if (progress < 100) {
+      msg = `${hourText} 데이터 집계중... (${progress}%) | 저장: ${rowCount}명`;
+    } else {
+      msg = `${hourText} 데이터 기준 자료 (${progress}%) | 저장: ${rowCount}명`;
+    }
+    document.getElementById('admin-crawl-status').innerText = msg;
+  });
+}
+setInterval(fetchCrawlStatus, 5000);
+fetchCrawlStatus();
+</script>
+{% endblock %} 

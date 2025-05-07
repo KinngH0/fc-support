@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="main-logo-mobile d-lg-none" style="width:100%;text-align:center;margin-top:20px;margin-bottom:12px;">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="48" style="margin:0 auto;max-width:80vw;max-height:48px;">
+  </div>
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="main-section rounded-4 p-5 mb-4">
+                <h1 class="h2 mb-3">FC SUPPORT에 오신것을 환영합니다</h1>
+                <p class="lead">FC 온라인 유저를 위한 다양한 데이터 분석 및 도구를 제공합니다.<br>좌측 메뉴에서 원하는 기능을 선택해보세요!</p>
+            </div>
+            <div class="sub-section rounded-4 p-4 mt-3">
+                <h5 class="mb-2">공지 및 안내</h5>
+                <ul class="mb-0">
+                    <li>서비스 이용 중 문의사항은 관리자에게 연락해 주세요.</li>
+                    <li>최신 데이터는 1시간 단위로 갱신됩니다.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+.main-section {
+    background: #fff;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    transition: background 0.3s;
+}
+.sub-section {
+    background: #f5f6fa;
+    border-radius: 1.5rem !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    transition: background 0.3s;
+}
+[data-theme="dark"] .main-section {
+    background: #23272b !important;
+    color: #fff;
+}
+[data-theme="dark"] .sub-section {
+    background: #181a1b !important;
+    color: #fff;
+}
+@media (min-width: 992px) {
+  .main-logo-mobile { display: none !important; }
+}
+@media (max-width: 991.98px) {
+  .main-logo-mobile { display: block; }
+}
+</style>
+{% endblock %} 

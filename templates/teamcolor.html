@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block loading %}
+<!-- 팀컬러 조회 전용 강제 오버레이 -->
+<div id="tcLoadingOverlay" style="
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+">
+    <div style="
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    ">
+        <div style="
+            width: 50px; height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4eb655;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        " id="tcLoadingSpinner"></div>
+        <p style="margin:0; color:#333; font-size:16px;" id="tcLoadingText">데이터를 수집하고 있습니다...</p>
+    </div>
+</div>
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+[data-theme="dark"] #tcLoadingOverlay {
+    background: rgba(0,0,0,0.7) !important;
+}
+[data-theme="dark"] #tcLoadingOverlay .loading-content, [data-theme="dark"] #tcLoadingOverlay > div {
+    background: #2d2d2d !important;
+}
+[data-theme="dark"] #tcLoadingOverlay p, [data-theme="dark"] #tcLoadingOverlay .loading-text {
+    color: #fff !important;
+}
+[data-theme="dark"] #tcLoadingSpinner {
+    border-color: #3d3d3d !important;
+    border-top-color: #4eb655 !important;
+}
+/* 아코디언 활성화 배경색 변경 */
+.accordion-button[aria-expanded="true"] {
+    background-color: #4eb655 !important;
+    color: #fff !important;
+}
+/* 다크모드 카드/아코디언/텍스트 */
+[data-theme="dark"] .card,
+[data-theme="dark"] .accordion-item,
+[data-theme="dark"] .accordion-body {
+    background-color: #23272b !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+[data-theme="dark"] .accordion-button {
+    background-color: #23272b !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+[data-theme="dark"] .accordion-button[aria-expanded="true"] {
+    background-color: #4eb655 !important;
+    color: #fff !important;
+}
+[data-theme="dark"] .fw-bold,
+[data-theme="dark"] .badge.bg-success {
+    color: #fff !important;
+}
+[data-theme="dark"] .border-end {
+    border-color: #444 !important;
+}
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 60px;
+    padding: 8px 1rem 0 1rem;
+    margin-bottom: 0;
+}
+.card-header .card-title {
+    margin-bottom: 0;
+    line-height: 1;
+}
+.card-body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+[data-theme="dark"] .card {
+    background-color: #2d2d2d !important;
+    border-color: #3d3d3d !important;
+}
+.pickrate-logo-top {
+    width: 100%;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+@media (min-width: 992px) {
+  .pickrate-logo-top { display: none !important; }
+}
+@media (max-width: 991.98px) {
+  .pickrate-logo-top { display: block; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pickrate-logo-top">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="48">
+</div>
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">팀컬러 조회</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-group">
+                                <label for="rankRange">랭킹 범위</label>
+                                <input type="number" class="form-control" id="rankRange" min="0" max="10000" placeholder="조회하실 랭킹 범위">
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="form-group">
+                                <label for="topN">TOP N</label>
+                                <input type="number" class="form-control" id="topN" min="0" max="10" placeholder="팀컬러 몇 위까지 출력할지 표시">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button class="btn" id="searchBtn" style="background-color: #4eb655; color: white;">조회</button>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="resultSection" style="display: none;">
+                        <div class="col-12">
+                            <div class="accordion" id="teamcolorAccordion">
+                                <!-- 아코디언 아이템들이 동적으로 로드될 위치 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchBtn = document.getElementById('searchBtn');
+    const loadingOverlay = document.getElementById('tcLoadingOverlay');
+    const loadingText = document.getElementById('tcLoadingText');
+    const teamcolorAccordion = document.getElementById('teamcolorAccordion');
+    const resultSection = document.getElementById('resultSection');
+
+    // 한글 통화 포맷 함수 추가
+    function format_korean_currency(value) {
+        if (!value) return '0억';
+        const 조 = Math.floor(value / 10000);
+        const 억 = value % 10000;
+        if (조 > 0) {
+            return `${조}조 ${억.toLocaleString()}억`;
+        } else {
+            return `${억.toLocaleString()}억`;
+        }
+    }
+
+    searchBtn.addEventListener('click', async function() {
+        const rankRange = document.getElementById('rankRange').value;
+        const topN = document.getElementById('topN').value;
+
+        if (!rankRange) {
+            alert('랭킹 범위를 입력해주세요.');
+            return;
+        }
+        if (!topN) {
+            alert('TOP N을 입력해주세요.');
+            return;
+        }
+
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = '데이터를 수집하고 있습니다...';
+        resultSection.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/teamcolor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    rankRange: parseInt(rankRange),
+                    topN: parseInt(topN)
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || '데이터 수집 중 오류가 발생했습니다.');
+            }
+
+            const data = await response.json();
+            // 결과 아코디언 업데이트
+            if (data.teamcolors.length > 0) {
+                resultSection.style.display = 'block';
+                teamcolorAccordion.innerHTML = data.teamcolors.map((teamcolor, index) => `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading${index}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
+                                <div class="d-flex justify-content-between w-100">
+                                    <span>${index + 1}위: ${teamcolor.name}</span>
+                                    <span class="badge bg-success">${teamcolor.percentage}%</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse${index}" class="accordion-collapse collapse" aria-labelledby="heading${index}" data-bs-parent="#teamcolorAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3"><strong>이용자 수:</strong> ${teamcolor.count}명</div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2 text-start border-end">
+                                        <div class="fw-bold">포메이션 순위</div>
+                                        ${(() => {
+                                            const sorted = Object.entries(teamcolor.formations)
+                                                .sort((a, b) => b[1].percentage - a[1].percentage);
+                                            const maxRank = sorted.length >= 3 ? 3 : sorted.length;
+                                            return sorted.slice(0, maxRank).map(([formation, data], idx) =>
+                                                `<div>${idx + 1}위: ${formation} - ${Math.round(data.percentage)}%(${data.count}명)</div>`
+                                            ).join('');
+                                        })()}
+                                    </div>
+                                    <div class="col-md-4 mb-2 text-start border-end">
+                                        <div class="fw-bold">등수(점수)</div>
+                                        <div>평균: ${teamcolor.avg_rank !== undefined && teamcolor.avg_rank !== null && teamcolor.avg_rank !== '-' ? teamcolor.avg_rank + '등' : '-'}${teamcolor.avg_score !== undefined && teamcolor.avg_score !== null && teamcolor.avg_score !== '-' ? '(' + teamcolor.avg_score + '점)' : ''}</div>
+                                        <div>최고: ${teamcolor.min_rank !== undefined && teamcolor.min_rank !== null && teamcolor.min_rank !== '-' ? teamcolor.min_rank + '등' : '-'}${teamcolor.min_score !== undefined && teamcolor.min_score !== null && teamcolor.min_score !== '-' ? '(' + teamcolor.min_score + '점)' : ''}${teamcolor.min_ranker ? ' - ' + teamcolor.min_ranker : ''}</div>
+                                        <div>최저: ${teamcolor.max_rank !== undefined && teamcolor.max_rank !== null && teamcolor.max_rank !== '-' ? teamcolor.max_rank + '등' : '-'}${teamcolor.max_score !== undefined && teamcolor.max_score !== null && teamcolor.max_score !== '-' ? '(' + teamcolor.max_score + '점)' : ''}${teamcolor.max_ranker ? ' - ' + teamcolor.max_ranker : ''}</div>
+                                    </div>
+                                    <div class="col-md-4 mb-2 text-start">
+                                        <div class="fw-bold">구단가치</div>
+                                        <div>평균: ${format_korean_currency(teamcolor.values.avg)}</div>
+                                        <div>최고: ${format_korean_currency(teamcolor.values.max)}</div>
+                                        <div>최저: ${format_korean_currency(teamcolor.values.min)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                teamcolorAccordion.innerHTML = '<div class="text-center">조회 결과가 없습니다.</div>';
+            }
+            loadingOverlay.style.display = 'none';
+        } catch (error) {
+            alert(error.message);
+            loadingOverlay.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %} 

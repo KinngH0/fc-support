@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC SUPPORT</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'GmarketSansMedium';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'GmarketSansMedium', sans-serif;
+        }
+
+        html, body {
+            background-color: #f0f2f5;
+        }
+        [data-theme="dark"] html, [data-theme="dark"] body {
+            background-color: #1a1a1a;
+        }
+        body {
+            min-height: 100vh;
+        }
+        .sidenav {
+            background: white;
+            border-radius: 12px;
+            margin: 16px 0 16px 16px;
+            padding: 16px;
+            width: 250px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: fixed;
+            height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .content {
+            margin-left: 282px;
+            padding: 16px;
+        }
+        .nav-link {
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #344767;
+            font-weight: 500;
+            margin: 4px 0;
+            transition: all 0.2s ease;
+            font-size: 1.1rem;
+        }
+        .nav-link:hover {
+            background-color: #f8f9fa;
+            color: #344767;
+        }
+        .nav-link.active {
+            background-color: #4eb655;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(78, 182, 85, 0.2);
+        }
+        .nav-link i {
+            margin-right: 8px;
+        }
+        .theme-toggle {
+            margin-top: auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+        }
+        .theme-toggle:hover {
+            background-color: #f8f9fa;
+        }
+        .theme-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+        .theme-toggle .sun-icon {
+            display: none;
+        }
+        .theme-toggle .moon-icon {
+            display: block;
+        }
+        [data-theme="dark"] .theme-toggle .sun-icon {
+            display: block;
+        }
+        [data-theme="dark"] .theme-toggle .moon-icon {
+            display: none;
+        }
+        [data-theme="dark"] {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .sidenav {
+            background-color: #2d2d2d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .nav-link {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .nav-link:hover {
+            background-color: #3d3d3d;
+        }
+        [data-theme="dark"] .theme-toggle:hover {
+            background-color: #3d3d3d;
+        }
+        [data-theme="dark"] .theme-toggle {
+            border-color: #3d3d3d;
+        }
+        [data-theme="dark"] .card {
+            background-color: #2d2d2d;
+            border-color: #3d3d3d;
+        }
+        [data-theme="dark"] .card-header {
+            background-color: #3d3d3d;
+            border-bottom-color: #4d4d4d;
+        }
+        [data-theme="dark"] .card-title {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-control {
+            background-color: #3d3d3d;
+            border-color: #4d4d4d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-control:focus {
+            background-color: #4d4d4d;
+            border-color: #5d5d5d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-control::placeholder {
+            color: #999999;
+        }
+        [data-theme="dark"] .table {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .table th,
+        [data-theme="dark"] .table td {
+            border-color: #4d4d4d;
+        }
+        [data-theme="dark"] .team-color-list {
+            background-color: #3d3d3d;
+            border-color: #4d4d4d;
+        }
+        [data-theme="dark"] .team-color-item {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .team-color-item:hover {
+            background-color: #4d4d4d;
+        }
+        [data-theme="dark"] .loading {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        [data-theme="dark"] .loading-spinner {
+            border-color: #4eb655;
+        }
+        [data-theme="dark"] .loading-spinner:after {
+            border-color: #ffffff;
+        }
+        [data-theme="dark"] label {
+            color: #ffffff;
+        }
+        [data-theme="dark"] h4, 
+        [data-theme="dark"] h5, 
+        [data-theme="dark"] h6 {
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-select {
+            background-color: #3d3d3d;
+            border-color: #4d4d4d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-select:focus {
+            background-color: #4d4d4d;
+            border-color: #5d5d5d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-select option {
+            background-color: #3d3d3d;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .form-group label {
+            color: #ffffff;
+        }
+
+        /* 테이블 공통 스타일 */
+        .table {
+            margin-bottom: 0;
+            border: 1px solid #dee2e6;
+            background-color: transparent;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .table td {
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        /* 다크모드 테이블 스타일 */
+        [data-theme="dark"] .table {
+            background-color: transparent;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+
+        [data-theme="dark"] .table th {
+            background-color: #2d2d2d;
+            border-color: #4d4d4d;
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .table td {
+            background-color: #1a1a1a;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+
+        [data-theme="dark"] .table-hover tbody tr:hover {
+            background-color: #2d2d2d !important;
+        }
+
+        /* 테이블 반응형 스타일 */
+        .table-responsive {
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .table-responsive {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 정렬 아이콘 스타일 */
+        [data-theme="dark"] .sortable {
+            cursor: pointer;
+        }
+
+        [data-theme="dark"] .sortable i {
+            color: #e0e0e0;
+            margin-left: 5px;
+        }
+
+        /* nav 메뉴만 세로 중앙에 오도록 조정 */
+        .sidenav nav.flex-column {
+            flex: unset;
+            display: block;
+            flex-direction: unset;
+            justify-content: unset;
+        }
+
+        /* 모바일 햄버거 및 오버레이 메뉴 */
+        .mobile-hamburger, .mobile-sidenav-overlay { display: none; }
+        @media (max-width: 991.98px) {
+          .sidenav { display: none !important; }
+          .content { margin-left: 0 !important; margin-top: -15px !important; }
+          .container-fluid, .row, .col-12 { margin-top: 0 !important; }
+          .mobile-header-bar {
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: transparent;
+            pointer-events: none;
+            width: auto;
+          }
+          .mobile-hamburger {
+            display: block;
+            background: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: background 0.2s, color 0.2s;
+            pointer-events: auto;
+            margin-right: 0;
+          }
+          .mobile-hamburger i {
+            color: #222;
+            font-size: 1.5rem;
+            transition: color 0.2s;
+          }
+          .mobile-sidenav-overlay {
+            display: none; position: fixed; z-index: 3000; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3);
+          }
+          .mobile-sidenav-overlay.active { display: block; }
+          .mobile-sidenav {
+            width: 250px; height: 100vh; background: #fff; border-radius: 0 12px 12px 0; box-shadow: 2px 0 8px rgba(0,0,0,0.08); padding: 16px; position: absolute; left: 0; top: 0; display: flex; flex-direction: column; justify-content: center;
+          }
+          [data-theme="dark"] .mobile-sidenav { background: #2d2d2d; color: #fff; }
+          [data-theme="dark"] .mobile-hamburger {
+            background: #23272b;
+          }
+          [data-theme="dark"] .mobile-hamburger i {
+            color: #fff;
+          }
+        }
+        @media (min-width: 992px) {
+          .mobile-header-bar { display: none !important; }
+        }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    {% block loading %}{% endblock %}
+    <!-- 모바일 햄버거 버튼+로고 상단 고정 -->
+    <div class="mobile-header-bar d-lg-none">
+      <button class="mobile-hamburger" id="hamburgerBtn" aria-label="메뉴 열기">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <!-- 모바일 오버레이 메뉴 -->
+    <div class="mobile-sidenav-overlay" id="mobileSidenavOverlay">
+      <div class="mobile-sidenav">
+        <div class="d-flex align-items-center justify-content-center mb-4 ps-2">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="64" loading="eager" style="will-change: opacity;">
+            </a>
+        </div>
+        <nav class="nav flex-column">
+            <a href="/pickrate" class="nav-link {% if request.endpoint == 'pickrate' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                픽률 조회
+            </a>
+            <a href="/teamcolor" class="nav-link {% if request.endpoint == 'teamcolor' %}active{% endif %}">
+                <i class="fas fa-palette"></i>
+                팀컬러 조회
+            </a>
+            <a href="/efficiency" class="nav-link {% if request.endpoint == 'efficiency' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                효율 조회
+            </a>
+        </nav>
+        <!-- 모바일 메뉴 하단 집계 상태 표시 -->
+        <div id="mobile-status-bar" style="width:100%; margin: 16px 0 0 0;">
+          <div style="width:100%; background:#333; border-radius:4px; height:8px; margin-bottom:6px;">
+            <div id="mobile-progress-inner" style="width:0%; background:#4eb655; height:100%; border-radius:4px; transition:width 0.5s;"></div>
+          </div>
+          <div id="mobile-status-text" style="color:#aaa; font-size:12px; text-align:center;">집계중입니다...</div>
+        </div>
+        <div class="theme-toggle" id="mobileThemeToggle">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+            </svg>
+        </div>
+      </div>
+    </div>
+    <div class="sidenav">
+        <div class="d-flex align-items-center justify-content-center mb-4 ps-2">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="64" loading="eager" style="will-change: opacity;">
+            </a>
+        </div>
+        <nav class="nav flex-column">
+            <a href="/pickrate" class="nav-link {% if request.endpoint == 'pickrate' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                픽률 조회
+            </a>
+            <a href="/teamcolor" class="nav-link {% if request.endpoint == 'teamcolor' %}active{% endif %}">
+                <i class="fas fa-palette"></i>
+                팀컬러 조회
+            </a>
+            <a href="/efficiency" class="nav-link {% if request.endpoint == 'efficiency' %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                효율 조회
+            </a>
+        </nav>
+        <!-- 집계 상태 표시 (다크모드 토글 바로 위) -->
+        <div id="status-bar" style="width:100%; margin: 0 0 12px 0;">
+          <div style="width:100%; background:#333; border-radius:4px; height:8px; margin-bottom:6px;">
+            <div id="progress-inner" style="width:0%; background:#4eb655; height:100%; border-radius:4px; transition:width 0.5s;"></div>
+          </div>
+          <div id="status-text" style="color:#aaa; font-size:12px; text-align:center;">집계중입니다...</div>
+        </div>
+        <div class="theme-toggle" id="themeToggle">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+            </svg>
+        </div>
+    </div>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const body = document.body;
+
+            // 테마 상태 확인
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            if (currentTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+            }
+
+            // 테마 토글
+            themeToggle.addEventListener('click', function() {
+                if (body.getAttribute('data-theme') === 'dark') {
+                    body.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+
+            // 모바일 햄버거/오버레이 메뉴
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const mobileSidenavOverlay = document.getElementById('mobileSidenavOverlay');
+            if (hamburgerBtn && mobileSidenavOverlay) {
+              hamburgerBtn.addEventListener('click', function() {
+                mobileSidenavOverlay.classList.add('active');
+              });
+              mobileSidenavOverlay.addEventListener('click', function(e) {
+                if (e.target === mobileSidenavOverlay) mobileSidenavOverlay.classList.remove('active');
+              });
+            }
+            // 모바일 테마 토글
+            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+            if (mobileThemeToggle) {
+              mobileThemeToggle.addEventListener('click', function() {
+                if (body.getAttribute('data-theme') === 'dark') {
+                  body.removeAttribute('data-theme');
+                  localStorage.setItem('theme', 'light');
+                } else {
+                  body.setAttribute('data-theme', 'dark');
+                  localStorage.setItem('theme', 'dark');
+                }
+              });
+            }
+
+            // 집계 상태 주기적 갱신 (기준시각 HH시, 24시간제)
+            function getHourText(dtStr) {
+              if (!dtStr) return '-';
+              const dt = new Date(dtStr.replace(' ', 'T'));
+              const h = dt.getHours().toString().padStart(2, '0');
+              return `${h}시`;
+            }
+            function fetchStatus() {
+              fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                  const progress = data.progress || 0;
+                  const hourText = getHourText(data.timestamp);
+                  // PC 사이드바
+                  document.getElementById('progress-inner').style.width = progress + '%';
+                  if (progress < 100) {
+                    document.getElementById('status-text').innerText = `${hourText} 데이터 집계중입니다... (${progress}%)`;
+                  } else {
+                    document.getElementById('status-text').innerText = `${hourText} 데이터 기준 자료 (${progress}%)`;
+                  }
+                  // 모바일 메뉴
+                  document.getElementById('mobile-progress-inner').style.width = progress + '%';
+                  if (progress < 100) {
+                    document.getElementById('mobile-status-text').innerText = `${hourText} 데이터 집계중입니다... (${progress}%)`;
+                  } else {
+                    document.getElementById('mobile-status-text').innerText = `${hourText} 데이터 기준 자료 (${progress}%)`;
+                  }
+                })
+                .catch(() => {
+                  document.getElementById('progress-inner').style.width = '0%';
+                  document.getElementById('status-text').innerText = '상태 정보를 불러올 수 없습니다.';
+                  document.getElementById('mobile-progress-inner').style.width = '0%';
+                  document.getElementById('mobile-status-text').innerText = '상태 정보를 불러올 수 없습니다.';
+                });
+            }
+            setInterval(fetchStatus, 5000);
+            fetchStatus();
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
