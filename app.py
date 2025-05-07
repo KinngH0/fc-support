@@ -261,49 +261,45 @@ def fetch_user_data(nickname, max_retries=5):
             limit = 100
             found_older_date = False
             player_cards = []
-            
             # 최근 5경기만 확인하도록 수정
-            match_res = session.get(
+                match_res = session.get(
                 f"https://open.api.nexon.com/fconline/v1/user/match?matchtype=52&ouid={ouid}&offset=0&limit=5&orderby=desc",
-                timeout=5
-            )
-            if match_res.status_code != 200:
+                    timeout=5
+                )
+                if match_res.status_code != 200:
                 return []
-                
-            match_ids = match_res.json()
-            if not match_ids:
+                match_ids = match_res.json()
+                if not match_ids:
                 return []
-                
-            for match_id in match_ids:
-                detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
-                if detail_res.status_code != 200:
-                    continue
-                match_data = detail_res.json()
-                for info in match_data["matchInfo"]:
-                    if info["ouid"] == ouid:
-                        match_time_str = info.get("matchDate") or match_data.get("matchDate")
-                        if not match_time_str:
-                            continue
-                        match_time = datetime.strptime(match_time_str[:19], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=9)
-                        match_time = match_time.date()
-                        if match_time > target:
-                            continue
-                        elif match_time < target:
-                            found_older_date = True
-                            break
+                for match_id in match_ids:
+                    detail_res = session.get(f"https://open.api.nexon.com/fconline/v1/match-detail?matchid={match_id}", timeout=5)
+                    if detail_res.status_code != 200:
+                        continue
+                    match_data = detail_res.json()
+                    for info in match_data["matchInfo"]:
+                        if info["ouid"] == ouid:
+                            match_time_str = info.get("matchDate") or match_data.get("matchDate")
+                            if not match_time_str:
+                                continue
+                            match_time = datetime.strptime(match_time_str[:19], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=9)
+                            match_time = match_time.date()
+                            if match_time > target:
+                                continue
+                            elif match_time < target:
+                                found_older_date = True
+                                break
                         # 선수 카드 정보 파싱
-                        for player in info.get("player", []):
-                            pos_num = player.get("spPosition")
-                            player_cards.append({
-                                "nickname": nickname,
-                                "name": player.get("name"),
-                                "season": player.get("season"),
-                                "grade": player.get("grade"),
-                                "position": pos_num
-                            })
+                            for player in info.get("player", []):
+                                pos_num = player.get("spPosition")
+                                player_cards.append({
+                                    "nickname": nickname,
+                                    "name": player.get("name"),
+                                    "season": player.get("season"),
+                                    "grade": player.get("grade"),
+                                    "position": pos_num
+                                })
                 if found_older_date or player_cards:
-                    break
-                    
+                        break
             if not player_cards:
                 player_cards.append({
                     "nickname": nickname,
@@ -424,22 +420,18 @@ def save_players_to_db(players):
     """선수 데이터를 DB에 저장 (이중 테이블 구조 활용)"""
     conn = sqlite3.connect('players.db')
     try:
-        c = conn.cursor()
-        
+    c = conn.cursor()
         # 현재 활성 테이블 확인
         active_table = c.execute('SELECT table_name FROM active_table WHERE id = 1').fetchone()
         if not active_table:
             # active_table이 없으면 초기화
             c.execute('INSERT INTO active_table (id, table_name) VALUES (1, "player_table_1")')
             active_table = ("player_table_1",)
-            conn.commit()
-        
+    conn.commit()
         # 다음 테이블 결정
         next_table = "player_table_2" if active_table[0] == "player_table_1" else "player_table_1"
-        
         # 트랜잭션 시작
         c.execute('BEGIN TRANSACTION')
-        
         try:
             # 다음 테이블에 데이터 저장
             c.execute(f'DELETE FROM {next_table}')
@@ -447,37 +439,33 @@ def save_players_to_db(players):
                 INSERT INTO {next_table} (name, level, team_color, rank, last_updated)
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
             ''', [(p['name'], p['level'], p['team_color'], p['rank']) for p in players])
-            
             # 활성 테이블 업데이트
             c.execute('UPDATE active_table SET table_name = ? WHERE id = 1', (next_table,))
-            
             # 트랜잭션 커밋
             conn.commit()
             print(f'[DB 저장 완료] {len(players)}개 선수 데이터를 {next_table}에 저장')
-            
-        except Exception as e:
+            except Exception as e:
             conn.rollback()
             print(f'[ERROR] DB 저장 중 오류 발생: {str(e)}')
             raise
-            
     finally:
         conn.close()
 
 def get_player_data():
     """현재 활성화된 테이블에서 데이터 조회"""
-    conn = sqlite3.connect('players.db')
-    c = conn.cursor()
+        conn = sqlite3.connect('players.db')
+        c = conn.cursor()
     current_table = get_active_table()
     c.execute(f'SELECT * FROM player_table_{current_table}')
     rows = c.fetchall()
-    conn.close()
+        conn.close()
     return rows
 
 def save_status(progress, is_running, target_hour, data_hour, last_update, row_count=0):
     """상태를 DB와 파일에 동시에 저장 (구조 개선)"""
     try:
-        conn = sqlite3.connect('players.db')
-        c = conn.cursor()
+    conn = sqlite3.connect('players.db')
+    c = conn.cursor()
         c.execute('''
             CREATE TABLE IF NOT EXISTS status (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -509,7 +497,7 @@ def save_status(progress, is_running, target_hour, data_hour, last_update, row_c
         print(f"[ERROR] 상태 저장 중 오류 발생: {str(e)}")
         raise
     finally:
-        conn.close()
+    conn.close()
 
 def load_status():
     try:
@@ -563,7 +551,7 @@ def setup_logging():
     # 파일 핸들러 (최대 10MB, 5개 백업)
     file_handler = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5)
     file_handler.setFormatter(log_formatter)
-    
+        
     # 콘솔 핸들러
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(log_formatter)
@@ -612,7 +600,6 @@ def process_batch(batch, 기준시각):
     """배치 단위로 선수 데이터 처리"""
     batch_players = []
     session = create_session()
-    
     try:
         for nickname, rank, team_color in batch:
             try:
@@ -626,16 +613,14 @@ def process_batch(batch, 기준시각):
                                 'team_color': team_color,
                                 'rank': rank
                             })
-            except Exception as e:
+                except Exception as e:
                 log_error(e, f"선수 {nickname} 처리 중 오류")
-                continue
-                
-    except Exception as e:
+            continue
+        except Exception as e:
         log_error(e, "배치 처리 중 오류")
         raise
     finally:
         session.close()
-        
     return batch_players
 
 def seconds_until_next_10min():
@@ -659,15 +644,18 @@ def start_crawling_scheduler():
         threading.Timer(delay, run_crawl_and_reschedule).start()
         print(f"[스케줄러] 다음 집계 예정: {next_time}")
     def run_crawl_and_reschedule():
-        crawl_and_save()
+        try:
+            crawl_and_save()
+    except Exception as e:
+            print(f"[ERROR] 집계 스케줄러 오류: {str(e)}")
         schedule_next()
     schedule_next()
 
 # 서버 시작 시 상태 초기화 (자료 기준 시각은 이전 집계 시각, 없으면 최근 정각)
 def check_and_reset_status():
     try:
-        conn = sqlite3.connect('players.db')
-        c = conn.cursor()
+    conn = sqlite3.connect('players.db')
+    c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS status (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             progress INTEGER DEFAULT 0,
@@ -684,7 +672,7 @@ def check_and_reset_status():
         c.execute('DELETE FROM status WHERE id = 1')
         c.execute('''INSERT INTO status (id, progress, is_running, target_hour, data_hour, last_update, row_count)
             VALUES (1, 0, 0, ?, ?, ?, 0)''', (target_hour, data_hour, last_update))
-        conn.commit()
+    conn.commit()
         status = {
             'progress': 0,
             'is_running': False,
@@ -693,7 +681,6 @@ def check_and_reset_status():
             'last_update': last_update,
             'row_count': 0
         }
-        # status.json 파일이 있으면 삭제
         if os.path.exists('status.json'):
             os.remove('status.json')
         with open('status.json', 'w') as f:
@@ -702,7 +689,7 @@ def check_and_reset_status():
     except Exception as e:
         print(f"[ERROR] 상태 초기화 중 오류 발생: {str(e)}")
     finally:
-        conn.close()
+    conn.close()
 
 def set_cached_rank_data(page, normalized_filter, data):
     """랭킹 데이터를 캐시에 저장"""
@@ -727,6 +714,10 @@ def get_next_schedule_time(now=None):
     if now.minute >= 10:
         next_hour = (now + timedelta(hours=1)).replace(minute=10, second=0, microsecond=0)
     return next_hour
+
+@app.before_first_request
+def start_cache_scheduler_once():
+    schedule_cache_clear()
 
 if __name__ == '__main__':
     setup_logging()  # 로깅 설정
