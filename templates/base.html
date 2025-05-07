@@ -361,6 +361,7 @@
             <div id="mobile-progress-inner" style="width:0%; background:#4eb655; height:100%; border-radius:4px; transition:width 0.5s;"></div>
           </div>
           <div id="mobile-status-text" style="color:#aaa; font-size:12px; text-align:center;">집계중입니다...</div>
+          <div id="mobile-data-timestamp" style="color:#4eb655; font-size:12px; text-align:center; margin-top:2px;"></div>
         </div>
         <div class="theme-toggle" id="mobileThemeToggle">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -398,6 +399,7 @@
             <div id="progress-inner" style="width:0%; background:#4eb655; height:100%; border-radius:4px; transition:width 0.5s;"></div>
           </div>
           <div id="status-text" style="color:#aaa; font-size:12px; text-align:center;">집계중입니다...</div>
+          <div id="sidebar-data-timestamp" style="color:#4eb655; font-size:12px; text-align:center; margin-top:2px;"></div>
         </div>
         <div class="theme-toggle" id="themeToggle">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -479,6 +481,10 @@
                   } else {
                     document.getElementById('status-text').innerText = `${hourText} 데이터 기준 자료 (${progress}%)`;
                   }
+                  // 기준 데이터 시각 표시
+                  let 기준시각 = data.timestamp ? new Date(data.timestamp.replace(' ', 'T')) : null;
+                  let 기준시각Text = 기준시각 ? `${기준시각.getFullYear()}년 ${String(기준시각.getMonth()+1).padStart(2,'0')}월 ${String(기준시각.getDate()).padStart(2,'0')}일 ${String(기준시각.getHours()).padStart(2,'0')}시 기준 데이터` : '';
+                  document.getElementById('sidebar-data-timestamp').innerText = 기준시각Text;
                   // 모바일 메뉴
                   document.getElementById('mobile-progress-inner').style.width = progress + '%';
                   if (progress < 100) {
@@ -486,6 +492,7 @@
                   } else {
                     document.getElementById('mobile-status-text').innerText = `${hourText} 데이터 기준 자료 (${progress}%)`;
                   }
+                  document.getElementById('mobile-data-timestamp').innerText = 기준시각Text;
                 })
                 .catch(() => {
                   document.getElementById('progress-inner').style.width = '0%';

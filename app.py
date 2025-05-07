@@ -394,8 +394,16 @@ def safe_api_call(url, method="GET", params=None, data=None, timeout=5):
     except ValueError as e:
         raise Exception(f"API 응답 파싱 중 오류 발생: {str(e)}")
 
+# 데이터 저장 경로 설정
+DATA_DIR = os.getenv('RENDER_PERSISTENT_DISK_PATH', '/var/data')
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+DB_PATH = os.path.join(DATA_DIR, 'players.db')
+STATUS_PATH = os.path.join(DATA_DIR, 'status.json')
+
 def init_db():
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS player_table (
@@ -420,7 +428,7 @@ init_db()
 # 1시간마다 전체 크롤링 & DB 갱신
 
 def save_players_to_db(players):
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('DELETE FROM player_table')
     c.executemany('''
@@ -434,12 +442,12 @@ def save_status(progress, timestamp, row_count=None):
     status = {'progress': progress, 'timestamp': timestamp}
     if row_count is not None:
         status['row_count'] = row_count
-    with open('status.json', 'w') as f:
+    with open(STATUS_PATH, 'w') as f:
         json.dump(status, f)
 
 def load_status():
     try:
-        with open('status.json', 'r') as f:
+        with open(STATUS_PATH, 'r') as f:
             return json.load(f)
     except:
         return {'progress': 0, 'timestamp': ''}
@@ -498,7 +506,7 @@ def crawl_and_save():
         elapsed = time.time() - start_time
         app.logger.info(f'진행률: {progress}% | {processed_batches}/{total_batches}배치 | 경과: {elapsed:.1f}s')
         # 집계 중에도 DB row 수를 status에 기록
-        conn = sqlite3.connect('players.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute('SELECT COUNT(*) FROM player_table')
         row_count = c.fetchone()[0]
@@ -506,7 +514,7 @@ def crawl_and_save():
         save_status(progress, 기준시각, row_count)
     save_players_to_db(all_players)
     app.logger.info(f'[DB 갱신 완료] 총 {len(all_players)}개 선수 데이터 저장')
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM player_table')
     row_count = c.fetchone()[0]
@@ -542,7 +550,7 @@ def search():
         rank_limit = int(data.get('rankRange', 1000))
         team_color = data.get('teamColor', 'all')
         top_n = int(data.get('topN', 5))
-        conn = sqlite3.connect('players.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         # 팀컬러 필터
         if team_color == 'all':
@@ -998,7 +1006,7 @@ def admin_data():
     team_color = request.args.get('team_color', '').strip()
     rank = request.args.get('rank', '').strip()
     position = request.args.get('position', '').strip()
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     q = 'SELECT * FROM player_table WHERE 1=1'
     params = []
@@ -1031,7 +1039,7 @@ def admin_data():
 @app.route('/api/admin/delete', methods=['POST'])
 def admin_delete():
     rowid = request.json.get('rowid')
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('DELETE FROM player_table WHERE rowid=?', (rowid,))
     conn.commit()
@@ -1044,7 +1052,7 @@ def admin_update():
     rowid = data.pop('rowid')
     keys = ', '.join([f'{k}=?' for k in data.keys()])
     values = list(data.values()) + [rowid]
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'UPDATE player_table SET {keys} WHERE rowid=?', values)
     conn.commit()
@@ -1057,7 +1065,7 @@ def admin_add():
     keys = ', '.join(data.keys())
     q = f'INSERT INTO player_table ({keys}) VALUES ({", ".join(["?"]*len(data))})'
     values = list(data.values())
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(q, values)
     conn.commit()
@@ -1067,7 +1075,7 @@ def admin_add():
 @app.route('/api/admin/excel', methods=['GET'])
 def admin_excel():
     import pandas as pd
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql_query('SELECT * FROM player_table', conn)
     conn.close()
     file_path = 'admin_export.xlsx'
@@ -1077,7 +1085,7 @@ def admin_excel():
 @app.route('/api/admin/csv', methods=['GET'])
 def admin_csv():
     import pandas as pd
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql_query('SELECT * FROM player_table', conn)
     conn.close()
     file_path = 'admin_export.csv'
@@ -1113,6 +1121,35 @@ def admin_log():
     except Exception as e:
         app.logger.error(f"로그 파일 읽기 오류: {str(e)}")
         return f"로그 파일 읽기 오류: {str(e)}"
+
+@app.route('/api/admin/user-info', methods=['GET'])
+def admin_user_info():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('SELECT * FROM user_info ORDER BY rank ASC')
+    rows = c.fetchall()
+    conn.close()
+    
+    columns = ["id", "nickname", "rank", "team_color", "formation", "value", "score", "timestamp"]
+    data = [dict(zip(columns, row)) for row in rows]
+    return jsonify(data)
+
+@app.route('/api/admin/user-players', methods=['GET'])
+def admin_user_players():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        SELECT up.*, ui.nickname 
+        FROM user_players up
+        JOIN user_info ui ON up.user_id = ui.id
+        ORDER BY ui.rank ASC, up.position ASC
+    ''')
+    rows = c.fetchall()
+    conn.close()
+    
+    columns = ["id", "user_id", "position", "player_name", "season", "grade", "reinforce", "nickname"]
+    data = [dict(zip(columns, row)) for row in rows]
+    return jsonify(data)
 
 def start_background_tasks():
     if not hasattr(app, 'scheduler_started'):
