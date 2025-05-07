@@ -394,11 +394,9 @@ def safe_api_call(url, method="GET", params=None, data=None, timeout=5):
     except ValueError as e:
         raise Exception(f"API 응답 파싱 중 오류 발생: {str(e)}")
 
-# 데이터 저장 경로 설정
-DATA_DIR = os.getenv('RENDER_PERSISTENT_DISK_PATH', '/var/data')
-if not os.path.exists(DATA_DIR):
-    os.makedirs(DATA_DIR)
-
+# 데이터 저장 경로 설정 (Render Persistent Disk 또는 로컬)
+DATA_DIR = os.environ.get('RENDER_PERSISTENT_DISK_PATH', './data')
+os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(DATA_DIR, 'players.db')
 STATUS_PATH = os.path.join(DATA_DIR, 'status.json')
 
