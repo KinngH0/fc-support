@@ -2,4 +2,5 @@ requests==2.31.0
 pandas==2.1.4
 openpyxl==3.1.2
 tqdm==4.66.1
-backoff==2.2.1 
+backoff==2.2.1
+gunicorn==21.2.0 
