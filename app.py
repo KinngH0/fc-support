@@ -19,9 +19,24 @@ import atexit
 import sqlite3
 import threading
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 API_KEY = os.getenv('FC_API_KEY')
+
+# 로깅 설정
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+# 로그 파일 핸들러 설정
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=1024*1024, backupCount=5, encoding='utf-8')
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
 
 # 캐시 설정
 rank_cache = {}
@@ -1061,14 +1076,29 @@ def admin_status():
 
 @app.route('/api/admin/log')
 def admin_log():
-    # 최근 로그 파일 200줄 반환 (없으면 빈 문자열)
-    import os
-    log_path = 'app.log'
-    if not os.path.exists(log_path):
-        return ''
-    with open(log_path, encoding='utf-8') as f:
-        lines = f.readlines()[-200:]
-    return '<br>'.join([line.strip() for line in lines])
+    try:
+        log_path = 'logs/app.log'
+        if not os.path.exists(log_path):
+            return ''
+        
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()[-200:]  # 최근 200줄만 가져오기
+        
+        # 로그 레벨에 따른 색상 지정
+        colored_lines = []
+        for line in lines:
+            if '[ERROR]' in line:
+                line = f'<span style="color: #ff6b6b">{line}</span>'
+            elif '[WARNING]' in line:
+                line = f'<span style="color: #ffd93d">{line}</span>'
+            elif '[INFO]' in line:
+                line = f'<span style="color: #6bff6b">{line}</span>'
+            colored_lines.append(line)
+        
+        return ''.join(colored_lines)
+    except Exception as e:
+        app.logger.error(f"로그 파일 읽기 오류: {str(e)}")
+        return f"로그 파일 읽기 오류: {str(e)}"
 
 if __name__ == '__main__':
     # 로컬 개발 환경에서는 디버그 모드로 실행

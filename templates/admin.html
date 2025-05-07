@@ -66,10 +66,19 @@
     </ul>
   </nav>
   <div class="mt-4">
-    <h5>집계 현황/진행률</h5>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">집계 현황/진행률</h5>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="auto-refresh" checked>
+        <label class="form-check-label" for="auto-refresh">자동 새로고침</label>
+      </div>
+    </div>
     <div id="admin-crawl-status" class="mb-2"></div>
-    <h5>최근 로그</h5>
-    <pre id="admin-log" style="background:#222; color:#eee; padding:12px; border-radius:8px; max-height:200px; overflow:auto;"></pre>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">최근 로그</h5>
+      <button class="btn btn-sm btn-outline-secondary" id="refresh-log">새로고침</button>
+    </div>
+    <pre id="admin-log" style="background:#222; color:#eee; padding:12px; border-radius:8px; max-height:400px; overflow:auto; font-size:0.9em;"></pre>
   </div>
 </div>
 {% endblock %}
@@ -85,6 +94,7 @@ function getHourText(dtStr) {
   const h = dt.getHours().toString().padStart(2, '0');
   return `${h}시`;
 }
+
 function fetchCrawlStatus() {
   axios.get('/api/admin/status').then(res => {
     const data = res.data;
@@ -100,7 +110,44 @@ function fetchCrawlStatus() {
     document.getElementById('admin-crawl-status').innerText = msg;
   });
 }
-setInterval(fetchCrawlStatus, 5000);
+
+function fetchLog() {
+  axios.get('/api/admin/log').then(res => {
+    const logElement = document.getElementById('admin-log');
+    logElement.innerHTML = res.data;
+    logElement.scrollTop = logElement.scrollHeight;
+  });
+}
+
+// 자동 새로고침 설정
+let statusInterval;
+let logInterval;
+
+function startAutoRefresh() {
+  statusInterval = setInterval(fetchCrawlStatus, 5000);
+  logInterval = setInterval(fetchLog, 5000);
+}
+
+function stopAutoRefresh() {
+  clearInterval(statusInterval);
+  clearInterval(logInterval);
+}
+
+// 초기 로드
 fetchCrawlStatus();
+fetchLog();
+startAutoRefresh();
+
+// 자동 새로고침 토글
+document.getElementById('auto-refresh').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+});
+
+// 수동 로그 새로고침
+document.getElementById('refresh-log').addEventListener('click', fetchLog);
 </script>
 {% endblock %} 
